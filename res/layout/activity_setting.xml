@@ -1,0 +1,55 @@
+
+<LinearLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical" >"
+
+<RadioGroup 
+    android:id="@+id/radioBalls"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    tools:context="com.novo.aanufrie.SettingActivity" >
+
+    <RadioButton
+        android:id="@+id/radioButton1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="3 balls" />
+
+    <RadioButton
+        android:id="@+id/radioButton2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="4 balls" />
+
+    <RadioButton
+        android:id="@+id/radioButton3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="5 balls" />
+    
+</RadioGroup>
+
+<LinearLayout  
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:orientation="horizontal" >
+        
+    <Button 
+        android:id="@+id/sApply"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Apply"
+    /> 
+
+    <Button 
+        android:id="@+id/sCancel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Cancel"
+    /> 
+</LinearLayout> 
+    
+</LinearLayout>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Lines</string>
+    <string name="action_settings">Settings</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="title_activity_rec">RecActivity</string>
+    <string name="title_activity_edit_rec">EditRecActivity</string>
+    <string name="title_activity_setting">SettingActivity</string>
+    <string name="titleNewBalls">NewBalls</string>
+    <string name="NewBallsSummary">how many balls are appeared</string>
+
+</resources>

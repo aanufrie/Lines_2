@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="color_red">#ff0000</color>
+    <color name="color_red_weak">#ff8888</color>
+    <color name="color_green">#00ff00</color>
+    <color name="color_green_weak">#88ff88</color>
+    <color name="color_blue">#0000ff</color>
+    <color name="color_blue_weak">#8888ff</color>
+    <color name="color_yellow">#ffff44</color>
+    <color name="color_yellow_weak">#ffff77</color>
+    <color name="color_black">#000000</color>
+    <color name="color_black_weak">#888888</color>
+    <color name="color_violet">#44ffff</color>
+    <color name="color_violet_weak">#77ffff</color>
+    <color name="color_orange">#ff44ff</color>
+    <color name="color_orange_weak">#ff77ff</color>
+    
+    <color name="color_1">#aa8899</color>
+    <color name="color_2">#7788aa</color>   
+    
+</resources>

@@ -1,0 +1,72 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+       <com.novo.aanufrie.MySurfaceView
+        android:id="@+id/mysurface"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_centerVertical="true"
+        android:layout_margin="10dp" />
+         
+    <TextView
+            android:id="@+id/myScore"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:textSize="15sp" />
+    
+     <Button
+        android:id="@+id/buttonswap"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@id/myScore"
+        android:text="New"
+        android:textSize="15sp" />
+     
+     <Button 
+        android:id="@+id/buttonredo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@id/buttonswap"
+        android:text="Undo"
+        android:textSize="15sp" />
+     
+      <Button 
+        android:id="@+id/buttonrec"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@id/buttonredo"
+        android:text="Rec"
+        android:textSize="15sp" />  
+   
+      <Button 
+        android:id="@+id/buttonhelp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@id/buttonrec"
+        android:text="Advisor"
+        android:textSize="15sp" />  
+     
+      <ToggleButton 
+        android:id="@+id/buttonrobot"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@id/buttonhelp"
+        android:text="Robot"
+        android:textSize="15sp" />  
+   
+     <!--com.novo.aanufrie.view.MySurfaceView  -->
+     <!--SurfaceView  -->
+
+     
+ 
+
+ </RelativeLayout>
+
