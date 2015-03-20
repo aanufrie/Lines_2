@@ -49,7 +49,6 @@ import com.novo.aanufrie.R;
 
 
 public class LinesViewActivity extends Activity implements OnSharedPreferenceChangeListener, Runnable {
-  public SharedPreferences prefs;
   public int newBalls;
   String newBallsString;
   private Button newGameBtn;
@@ -210,9 +209,7 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     	Log.d("lines", "onCreate" );
     	super.onCreate(savedInstanceState);
     	
-    	prefs = PreferenceManager.getDefaultSharedPreferences(this); 
-    	prefs.registerOnSharedPreferenceChangeListener(this);
-    	newBallsString = prefs.getString("newballs", "4");
+       	newBallsString = ((LinesApplication)getApplication()).prefs.getString("newballs", "4");
     	Log.d("lines", "New Balls " + newBallsString );
     	filename="lines"+newBallsString+".save";
     	balls_count = Integer.parseInt(newBallsString);
@@ -1480,7 +1477,7 @@ public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
 		String key) {
 	// TODO Auto-generated method stub
 	Log.d("lines", "onSharedPreferenceChanges"+newBallsString);
-	newBallsString = prefs.getString("newballs", "4");
+	newBallsString = ((LinesApplication)getApplication()).prefs.getString("newballs", "4");
 	balls_count = Integer.parseInt(newBallsString);
 	loadGame();
 }
