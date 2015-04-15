@@ -49,6 +49,7 @@ import com.novo.aanufrie.R;
 
 
 public class LinesViewActivity extends Activity implements OnSharedPreferenceChangeListener, Runnable {
+  public LinesApplication myApp; 
   public int newBalls;
   String newBallsString;
   private Button newGameBtn;
@@ -64,12 +65,13 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
   private Thread thread;
   private int radiusBlack, radiusWhite;
   private boolean left = true;
+
   
   private boolean showPath = true;
-  private coordinate Path[] = new coordinate[81];
-  private int pathlength=0;
+  //private coordinate Path[] = new coordinate[81];
+  
   private boolean Movement_in_Progress = false;
-  private int currstep = 0;
+  
   private int skip = 0;
   static final int SAVE_OR_NOT = 0;
   
@@ -82,9 +84,9 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
   private int ddd = 5;
   private int jmp = 0;
   private int maxjmp = 4;
-  private coordinate active,to;
-  private coordinate before, redo;
-  EColor active_color = EColor.NONE;
+  //private coordinate active,to;
+  //private coordinate before, redo;
+  //EColor active_color = EColor.NONE;
   float xwidth=0;
   float xtop=0;
   final Handler myHandler = new Handler();
@@ -93,32 +95,32 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
   static String MyScore;
   
   // next balls
-  private EColor newballs[] = new EColor[10];
-  private EColor lastballs[] = new EColor[10];
-  private coordinate lastballs_pos[] = new coordinate[10];
-  private int balls_count = 0;
-  private int Freeroom = 0;
-  private int lastFreeroom = 0;
-  private boolean redo_is_active = false;
-  private boolean robot_is_active = false;
-  private int Score = 0;
+  //private EColor newballs[] = new EColor[10];
+  //private EColor lastballs[] = new EColor[10];
+  //private coordinate lastballs_pos[] = new coordinate[10];
+  //private int balls_count = 0;
+  //private int Freeroom = 0;
+  //private int lastFreeroom = 0;
+  //private boolean redo_is_active = false;
+  //private boolean robot_is_active = false;
+  //private int Score = 0;
     
-  public EColor Myplane[][] = new EColor[9][9];
-  public EColor MyplaneCopy[][] = new EColor[9][9];
+  //public EColor Myplane[][] = new EColor[9][9];
+  //public EColor MyplaneCopy[][] = new EColor[9][9];
   public int Colors[][] = new int[8][2];
-  public boolean visited[][] = new boolean[9][9];
-  private coordinate all_balls[] = new coordinate[36];
-  int balls_in_lines =0;
+  
+  //private coordinate all_balls[] = new coordinate[36];
+  
   
   DbHelper dbHelper;
   //SQLiteDatabase db;
   //Cursor cursor;
   
-  public class coordinate{
+  /*public class coordinate{
 	  public int i=0;
       public int j=0;
       public coordinate(int mi, int mj) {i = mi; j = mj;}
-  }
+  }*/
 
   public class position_rep{
 	  public int n9;
@@ -139,43 +141,14 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
   }
   
   
-  public enum EColor {
+  /*public enum EColor {
 	  NONE(0),RED(1),GREEN(2),BLUE(3),YELLOW(4),BLACK(5),VIOLET(6),ORANGE(7);
 	  EColor(int value) {this.value=value;}
 	  private final int value;
 	  public int int_EColor() {
-         /*int ret;		 
-		 switch(this) {
-		 case NONE:
-		    ret = 0;
-		    break;
-		 case RED:
-			ret = 1;
-			break;
-		 case GREEN:
-			ret = 2;
-			break;
-		 case BLUE:
-			ret = 3;
-			break;
-		 case YELLOW:
-			ret = 4;
-			break;			
-		 case BLACK:
-			ret = 5;
-			break;
-		 case VIOLET:
-			ret = 6;
-			break;
-		 case ORANGE:
-			ret = 7;
-			break;	
-		 default:
-			ret = 0;
-		 }*/
-		 return value;  
+   		 return value;  
 	  }
-  }
+  }*/
 	
      /**
 	 * display the menu
@@ -195,7 +168,7 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
 			case R.id.action_settings:
 				saveGame();
 				startActivity(new Intent(this, SettingActivity.class));
-				balls_count=Integer.parseInt(newBallsString);
+				myApp.balls_count=Integer.parseInt(newBallsString);
 				loadGame();
 				break;
 	    }
@@ -208,11 +181,11 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     public void onCreate(Bundle savedInstanceState) {
     	Log.d("lines", "onCreate" );
     	super.onCreate(savedInstanceState);
-    	
-       	newBallsString = ((LinesApplication)getApplication()).prefs.getString("newballs", "4");
+    	myApp = (LinesApplication)getApplication();
+    	newBallsString = myApp.prefs.getString("newballs", "4");
     	Log.d("lines", "New Balls " + newBallsString );
     	filename="lines"+newBallsString+".save";
-    	balls_count = Integer.parseInt(newBallsString);
+    	myApp.balls_count = Integer.parseInt(newBallsString);
     	setContentView(R.layout.activity_surface_view);
     	
     	newGameBtn = (Button) findViewById(R.id.buttonswap);
@@ -224,44 +197,10 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     	ScoreView = (TextView) findViewById(R.id.myScore);
     	surface = (SurfaceView) findViewById(R.id.mysurface);
     	
-    	/* LinearLayout mainlayout = new LinearLayout(this);
-    	mainlayout.setOrientation(LinearLayout.VERTICAL);
-    	LayoutParams layoutParam = new LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT);
-    	setContentView(mainlayout,layoutParam);
-    	
-    	SurfaceView surface = new MySurfaceView(this);
-    	LayoutParams surfaceParam = new LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.WRAP_CONTENT);
-    	setContentView(surface,surfaceParam);
-    	//mainlayout.addView(surface,surfaceParam);
-    	mainlayout.addView(surface);*/
-    	
-    	/*LayoutParams lpView = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-    	
-    	Button newGameBtn = new Button(this);
-    	newGameBtn.setText("New Game");
-    	setContentView(newGameBtn,lpView);
-    	mainlayout.addView(newGameBtn);
-    	
-    	Button redoBtn = new Button(this);
-    	newGameBtn.setText("Redo");
-    	setContentView(redoBtn,lpView);
-    	mainlayout.addView(redoBtn);
-    	
-    	Button recBtn = new Button(this);
-    	newGameBtn.setText("Records");
-    	setContentView(recBtn,lpView);
-    	mainlayout.addView(recBtn);
-    	
-    	TextView ScoreView = new TextView(this);
-    	ScoreView.setText("0  ");
-    	setContentView(ScoreView,lpView);
-    	mainlayout.addView(ScoreView);*/
-        
-    	//ScoreView.setText("110  ");        
-        active = new coordinate(0,0);
-        to = new coordinate(0,0);
-        before = new coordinate(0,0);
-        redo   = new coordinate(0,0);
+        //active = new coordinate(0,0);
+        //to = new coordinate(0,0);
+        //before = new coordinate(0,0);
+        //redo   = new coordinate(0,0);
         
         holder = surface.getHolder();
         
@@ -306,19 +245,28 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
 
         helpBtn.setOnClickListener(new OnClickListener() {
         	public void onClick(View arg0) {
-        		Find_Best_Movement();
+        		myApp.Find_Best_Movement(); 
+   	 	        Log.d("lines", "Find_Best_Movement "+Integer.toString(myApp.best_from.i)+" "+
+  	               Integer.toString(myApp.best_from.j)+" "+Integer.toString(myApp.best_to.i)+" "+Integer.toString(myApp.best_to.j) ); 
+  	 	      // These values are used by run(). Should be defined. 
+  	 	      myApp.active = myApp.best_from;
+  	 	      myApp.active_color = myApp.Myplane[myApp.best_from.i][myApp.best_from.j];
+  	 	      myApp.to = myApp.best_to;
+  	 	      myApp.saveStatus();
+  	 	      moveBall(myApp.best_from,myApp.best_to);
+	       
         	}
         });
         
         robotBtn.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
-              		robot_is_active = true;
+              		myApp.robot_is_active = true;
             		//Robot();
               		startService(new Intent(getBaseContext(),RobotService.class));
                 	// The toggle is enabled
                 } else {
-                	robot_is_active = false;
+                	myApp.robot_is_active = false;
                     // The toggle is disabled
                 	stopService(new Intent(getBaseContext(),RobotService.class));
                 }
@@ -341,27 +289,27 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
         if(Movement_in_Progress)
         	return false;
         
-        if(active.i >= 0 && active.j >= 0) {
-        	if(Myplane[i][j] == EColor.NONE) {
-        		to.i = i;
-        		to.j = j;
-        		Log.d("lines", "to: " + Integer.toString(active.i)+ " " + Integer.toString(active.j));
-        		saveStatus();
-        		moveBall(active,to);
+        if(myApp.active.i >= 0 && myApp.active.j >= 0) {
+        	if(myApp.Myplane[i][j] == LinesApplication.EColor.NONE) {
+        		myApp.to.i = i;
+        		myApp.to.j = j;
+        		Log.d("lines", "to: " + Integer.toString(myApp.active.i)+ " " + Integer.toString(myApp.active.j));
+        		myApp.saveStatus();
+        		moveBall(myApp.active,myApp.to);
         	}
         	else {
-        	    active.i = i;
-        	    active.j = j;
-        	    active_color = Myplane[i][j];
-        	    Log.d("lines", "to: " + Integer.toString(active.i)+ " " + Integer.toString(active.j)); 
+        	    myApp.active.i = i;
+        	    myApp.active.j = j;
+        	    myApp.active_color = myApp.Myplane[i][j];
+        	    Log.d("lines", "to: " + Integer.toString(myApp.active.i)+ " " + Integer.toString(myApp.active.j)); 
         	}
         }
         else {
-        	if(Myplane[i][j] != EColor.NONE) {
-        		active.i = i;
-        		active.j = j;
-        		active_color = Myplane[i][j];
-        		Log.d("lines", "to: " + Integer.toString(active.i)+ " " + Integer.toString(active.j));        
+        	if(myApp.Myplane[i][j] != LinesApplication.EColor.NONE) {
+        		myApp.active.i = i;
+        		myApp.active.j = j;
+        		myApp.active_color = myApp.Myplane[i][j];
+        		Log.d("lines", "to: " + Integer.toString(myApp.active.i)+ " " + Integer.toString(myApp.active.j));        
         	}
         }
            	
@@ -388,21 +336,10 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
       
       for(int i=0; i<9; i++){
     	  for(int j=0;j<9;j++){
-    		  Myplane[i][j] = (EColor.values())[(i+j)%8];
+    		  myApp.Myplane[i][j] = (LinesApplication.EColor.values())[(i+j)%8];
     	  }
       }
-      for(int i=0; i < 81; i++) {
-          Path[i] = new coordinate(0,0);
-      }
-      active.i = -1;
-      active.j = -1;
-      
-      for(int i=0; i<10; i++) {
-    	lastballs_pos[i] = new coordinate(0,0);
-      }
-      for(int i=0; i<36; i++) {
-    	all_balls[i] = new coordinate(0,0);
-      }
+ 
        
       if(!loadGame()) startNewGame();
       //UpdateGUI();
@@ -416,207 +353,30 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     
      final Runnable myRunnable = new Runnable() {
          public void run() {
-        	 ScoreView.setText(Integer.toString(Score)+ "  "); 
+        	 ScoreView.setText(Integer.toString(myApp.Score)+ "  "); 
          }
       };
      
-    private void clear_visited() {
-       for(int i=0; i<9; i++){
-    	  for(int j=0; j<9; j++) {
-    		  visited[i][j] = false;
-    	  }
-       }
-    }
+   
     
-    
-    private boolean find_path(coordinate from, coordinate to) {
-      coordinate nbs[] = new coordinate[4];
-      coordinate next = new coordinate(0,0);
-      coordinate curr = new coordinate(0,0);
-      curr.i = from.i; curr.j = from.j;
-      boolean found = false;
-      //Log.d("lines", "findPath: From " + Integer.toString(from.i)+ " " + Integer.toString(from.j) );
-      //Log.d("lines", "To " + Integer.toString(to.i)+ " " + Integer.toString(to.j) );
-      //pathlength++;
-      //currstep++;
-      if(from.i < 0 || from.i >= 9 || from.j <0 || from.j >= 9) {
-    	  return false; 
-      }
-      if(from.i == to.i && from.j == to.j) {
-    	 //pathlength++;
-    	 Path[currstep].i = to.i;
-    	 Path[currstep].j = to.j;
-    	 //Log.d("lines", "Path found "+ " " + Integer.toString(pathlength));
-    	 //Log.d("lines", "addpath:" + Integer.toString(currstep)+ ": " + Integer.toString(to.i)+ " " + Integer.toString(to.j));
-    	 return true;
-      }
-      nbs[0]=new coordinate(0,0);
-      nbs[1]=new coordinate(0,0);
-      nbs[2]=new coordinate(0,0);
-      nbs[3]=new coordinate(0,0);
-      if(from.i < to.i && from.j < to.j) {
-    	  nbs[0].i = 1; nbs[0].j = 0;
-    	  nbs[1].i = 0; nbs[1].j = 1;
-    	  nbs[2].i = -1; nbs[2].j = 0;
-    	  nbs[3].i = 0; nbs[3].j = -1;
-      }
-      if(from.i < to.i && from.j >= to.j) {
-    	  nbs[0].i = 1; nbs[0].j = 0;
-    	  nbs[1].i = 0; nbs[1].j = -1;
-    	  nbs[2].i = -1; nbs[2].j = 0;
-    	  nbs[3].i = 0; nbs[3].j = 1;
-      }
-      if(from.i >= to.i && from.j >= to.j) {
-    	  nbs[0].i = -1; nbs[0].j = 0;
-    	  nbs[1].i = 0; nbs[1].j = -1;
-    	  nbs[2].i = 1; nbs[2].j = 0;
-    	  nbs[3].i = 0; nbs[3].j = 1;
-      }
-      if(from.i >= to.i && from.j < to.j) {
-    	  nbs[0].i = -1; nbs[0].j = 0;
-    	  nbs[1].i = 0; nbs[1].j = 1;
-    	  nbs[2].i = 1; nbs[2].j = 0;
-    	  nbs[3].i = 0; nbs[3].j = -1;
-      }
-      visited[from.i][from.j] = true;
-      pathlength++;
-      currstep++;
-      for(int i = 0; i< 4; i++) {
-    	  int myi = from.i+nbs[i].i ;
-    	  int myj = from.j+nbs[i].j ;
-    	  //Log.d("lines", "findPath: myi " + Integer.toString(myi)+ "myj " + Integer.toString(myj) );
-    	  if( myi >= 0 && myi < 9 && myj >= 0 && myj < 9 &&
-    	      !visited[myi][myj] && Myplane[myi][myj] == EColor.NONE) {
-    		  next.i = myi; next.j = myj;
-      		  found = find_path(next,to);
-    		  if(found) { 
-    			currstep--;
-    		   	Path[currstep].i = curr.i;
-    	    	Path[currstep].j = curr.j;
-    	    	 //Log.d("lines", "Addpath:" + Integer.toString(currstep)+ ": " + Integer.toString(curr.i)+ " " + Integer.toString(curr.j));
-    	    	return true;
-    		  }
-    	  }
-      }
-	  pathlength--;
-	  currstep--;   
-      return false;
-      
-    }
-    
-    private void check_direction(coordinate ball_pos, int di, int dj){
-    	EColor mycolor = Myplane[ball_pos.i][ball_pos.j];
-        int i = ball_pos.i;
-        int j = ball_pos.j;
-    	
-    	while(true) {
-    	  i += di;
-    	  j += dj;
-    	  if(i>=0 && i<9 && j>=0 && j<9 && mycolor == Myplane[i][j]) {
-    		  all_balls[balls_in_lines].i = i;
-    		  all_balls[balls_in_lines].j = j;
-    		  balls_in_lines++;
-    	  }
-    	  else {
-    		  return;
-    	  }
-    	}
-    }
-    
-    private boolean check_for_lines(coordinate ball_pos) {
-        //coordinate direction = new coordinate(0,0);
-    	EColor mycolor = Myplane[ball_pos.i][ball_pos.j];
-    	int prev = 1;
-        int number_of_lines = 0;
-        
-        
-        Log.d("lines", "check_for_lines:" + Integer.toString(Freeroom) + " " + Integer.toString(ball_pos.i) + " " + Integer.toString(ball_pos.j));
-        //ScoreView.setText(Integer.toString(Score) + "  ");
-        if(mycolor == EColor.NONE) {
-        	Log.d("lines", "Ups");
-        	return false;
-        }
-        
-        balls_in_lines=0;
- 		all_balls[0].i = ball_pos.i;
-		all_balls[0].j = ball_pos.j;
-		balls_in_lines++;
-        check_direction(ball_pos,1,0);
-        check_direction(ball_pos,-1,0);
-        if(balls_in_lines - prev < 4) { 
-        	balls_in_lines = prev;
-        }
-        else {
-        	number_of_lines++;
-        	Log.d("lines", "1" + " " + Integer.toString(balls_in_lines));      	
-        }
-        prev = balls_in_lines;
-        check_direction(ball_pos,1,1);
-        check_direction(ball_pos,-1,-1);
-        if(balls_in_lines - prev < 4) { 
-        	balls_in_lines = prev;
-        }
-        else {
-        	Log.d("lines", "2"+ " " + Integer.toString(balls_in_lines));  
-        	number_of_lines++;
-        }
-        prev = balls_in_lines;
-        check_direction(ball_pos,0,1);
-        check_direction(ball_pos,0,-1);
-        if(balls_in_lines - prev < 4) { 
-        	balls_in_lines = prev;
-        }
-        else {
-        	Log.d("lines", "3"+ " " + Integer.toString(balls_in_lines));  
-        	number_of_lines++;
-        }
-        prev = balls_in_lines;
-        check_direction(ball_pos,1,-1);
-        check_direction(ball_pos,-1,1);
-        if(balls_in_lines - prev < 4) {
-        	balls_in_lines = prev;
-        }
-        else {
-        	Log.d("lines", "4"+ " " + Integer.toString(balls_in_lines));
-        	number_of_lines++;
-        }
-        
-        if(balls_in_lines >= 5) {
-            for(int i=0; i < balls_in_lines; i++) {
-            	Log.d("lines", "all balls:"+ " " + Integer.toString(all_balls[i].i) + " " + Integer.toString(all_balls[i].j));
-            	Myplane[all_balls[i].i][all_balls[i].j] = EColor.NONE;
-            	Freeroom++;
-            }
-            Score = Score + 2*(number_of_lines * balls_in_lines);
-            Log.d("lines", "Score: " + Integer.toString(Score));
-            //ScoreView.setText(Integer.toString(Score) + "  ");
-            //ScoreView.setText("110  ");
-        	return true;
-        }
-        Log.d("lines", "Score: " + Integer.toString(Score));
-        //ScoreView.setText(Integer.toString(Score) + "  ");
-        return false; 
-    }
-    
-    
-    private void moveBall(coordinate from, coordinate to) {
-      EColor mcol = Myplane[from.i][from.j];
-      Log.d("lines", "moveBall Freeroom:" + Integer.toString(Freeroom)+ " " + Integer.toString(mcol.int_EColor()));
-      clear_visited();
-      pathlength = 1;
-      currstep = 0;
+    private void moveBall(LinesApplication.coordinate from, LinesApplication.coordinate to) {
+      LinesApplication.EColor mcol = myApp.Myplane[from.i][from.j];
+      Log.d("lines", "moveBall Freeroom:" + Integer.toString(myApp.Freeroom)+ " " + Integer.toString(mcol.int_EColor()));
+      myApp.clear_visited();
+      myApp.pathlength = 1;
+      myApp.currstep = 0;
       //ScoreView.setText(Integer.toString(Score++)+ "  "); 
-      if(find_path(from,to)) {
+      if(myApp.find_path(from,to)) {
          /*Myplane[from.i][from.j] = EColor.NONE;
          Myplane[to.i][to.j] = mcol;*/
     	 //Log.d("lines", "addpath:" + "0:"+ " " + Integer.toString(from.i)+ " " + Integer.toString(from.j));
     	 //Path[0].i = from.i;
 	     //Path[0].j = from.j;
     	 Movement_in_Progress = true;
-    	 Log.d("lines", "moveBall pathlength:" + Integer.toString(pathlength));
-    	 currstep=0;
-       	 for(int i=0; i<pathlength;i++) {
-    		 Log.d("lines", "Path:" + Integer.toString(i) + " " + Integer.toString(Path[i].i) + " " + Integer.toString(Path[i].j)); 
+    	 Log.d("lines", "moveBall pathlength:" + Integer.toString(myApp.pathlength));
+    	 myApp.currstep=0;
+       	 for(int i=0; i<myApp.pathlength;i++) {
+    		 Log.d("lines", "Path:" + Integer.toString(i) + " " + Integer.toString(myApp.Path[i].i) + " " + Integer.toString(myApp.Path[i].j)); 
     	 }
          /*if(!check_for_lines(to)) {
             ball_position();
@@ -630,38 +390,25 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     		  
     }
     
-    public void saveStatus() {
-       for(int i=0; i< balls_count; i++) {
-    	   lastballs[i] = newballs[i];
-       }
-       redo.i = to.i; redo.j = to.j;
-       before.i = active.i; before.j = active.j;
-       redo_is_active = true;
-    }
+  
     
     public void Redo() {
-       if(redo_is_active) {
-    	   for(int i=0; i < balls_count; i++) {
-    		   newballs[i] = lastballs[i];
-    		   Myplane[lastballs_pos[i].i][lastballs_pos[i].j] = (EColor.values())[0];
-    		   Freeroom++;
+       if(myApp.redo_is_active) {
+    	   for(int i=0; i < myApp.balls_count; i++) {
+    		   myApp.newballs[i] = myApp.lastballs[i];
+    		   myApp.Myplane[myApp.lastballs_pos[i].i][myApp.lastballs_pos[i].j] = (LinesApplication.EColor.values())[0];
+    		   myApp.Freeroom++;
     	   }
-    	   Myplane[before.i][before.j]= Myplane[redo.i][redo.j];
-    	   Myplane[redo.i][redo.j] = (EColor.values())[0];
+    	   myApp.Myplane[myApp.before.i][myApp.before.j]= myApp.Myplane[myApp.redo.i][myApp.redo.j];
+    	   myApp.Myplane[myApp.redo.i][myApp.redo.j] = (LinesApplication.EColor.values())[0];
        }
-       redo_is_active = false;
+       myApp.redo_is_active = false;
        UpdateGUI();
     }
     
-    public void PlainCopy() {
-    	for(int i=0; i < 9; i++) {
-    		for(int j=0; j < 9; j++ ) {
-    			MyplaneCopy[i][j] = Myplane[i][j];
-    		}
-    	}
-    }
+ 
     
-    public int Estimate_Line(coordinate from, coordinate direction){
+    /*public int Estimate_Line(coordinate from, coordinate direction){
     	int cost = 0;
     	int i=0;
     	int j=0;
@@ -673,9 +420,9 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     	int endj=0;
     	//EColor color = EColor.RED;
     	    	   	
-    	for(EColor color:EColor.values()) {
+    	for(LinesApplication.EColor color:LinesApplication.EColor.values()) {
     	
-    		if (color == EColor.NONE )
+    		if (color == LinesApplication.EColor.NONE )
     			continue;
     		//Log.d("lines", "Estimate_Line: " + Integer.toString(color.int_EColor()));
     		//do {
@@ -695,9 +442,9 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     	       else {
     	           while((nexti == i || nexti != endi) &&
     	                 (nextj == j || nextj != endj)) {
-    	                if(MyplaneCopy[nexti][nextj] == color)
+    	                if(myApp.MyplaneCopy[nexti][nextj] == color)
     	                  kol_of_color++;
-    	                if(MyplaneCopy[nexti][nextj] == EColor.NONE) 
+    	                if(myApp.MyplaneCopy[nexti][nextj] == LinesApplication.EColor.NONE) 
     	                  kol_of_none++;
     	                nexti=nexti+direction.i;
     	                nextj=nextj+direction.j;
@@ -727,14 +474,14 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     	} 
     	
     	return cost;
-    }
+    }*/
     
-    public int Estimate_Position(coordinate from, coordinate to) {
+    /*public int Estimate_Position(coordinate from, coordinate to) {
        int cost =0;
  
-       EColor color = MyplaneCopy[from.i][from.j];
-       MyplaneCopy[from.i][from.j] = EColor.NONE;
-       MyplaneCopy[to.i][to.j]=color;
+       LinesApplication.EColor color = myApp.MyplaneCopy[from.i][from.j];
+       myApp.MyplaneCopy[from.i][from.j] = LinesApplication.EColor.NONE;
+       myApp.MyplaneCopy[to.i][to.j]=color;
        cost += Estimate_Line(new coordinate(4,0),new coordinate(1,1));
        cost += Estimate_Line(new coordinate(3,0),new coordinate(1,1));
        cost += Estimate_Line(new coordinate(2,0),new coordinate(1,1));
@@ -761,87 +508,40 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
        for(int i=0; i < 9; i++) {
     	   cost += Estimate_Line(new coordinate(i,0),new coordinate(0,1));
        }
-       MyplaneCopy[from.i][from.j] = color;
-       MyplaneCopy[to.i][to.j]=EColor.NONE;
+       myApp.MyplaneCopy[from.i][from.j] = color;
+       myApp.MyplaneCopy[to.i][to.j]=LinesApplication.EColor.NONE;
        
        return cost;
-    }
+    }*/
     
     public void Robot() {
-    	while (robot_is_active && Freeroom != 0) {
-    		Find_Best_Movement();
+    	while (myApp.robot_is_active && myApp.Freeroom != 0) {
+    		myApp.Find_Best_Movement();
     		UpdateGUI();
     	}
     	
     }
     
-    public void Find_Best_Movement() {
-       coordinate best_from = new coordinate(0,0);
-       coordinate best_to = new coordinate(0,0);
-       int best_cost = 0;
-       int cost = 0;
-       
-       Log.d("lines", "Find_Best_Movement start");     
-       if (Movement_in_Progress)
-    	   return;
-       // for working with copy of Myplane
-       PlainCopy();        
-                
-       for (int i=0; i<9; i++) {
-    	   for (int j=0; j<9; j++) {
-    		   if (Myplane[i][j] != EColor.NONE) {
-    			   for (int k=0; k<9; k++) {
-    				   for (int m=0; m<9; m++) {
-    					   if(Myplane[k][m] == EColor.NONE) {
-    						   clear_visited();
-    						   if (find_path(new coordinate(i,j),new coordinate(k,m))) {
-    							   cost = Estimate_Position(new coordinate(i,j),new coordinate(k,m));
-    							   if (cost > 0)
-    							       Log.d("lines", "Find_Best_Movement " + Integer.toString(i)+":"+Integer.toString(j)+"->"+Integer.toString(k)+":"+Integer.toString(m)+" " + Integer.toString(cost));
-    							   if (cost > best_cost) {
-    								   best_cost = cost;
-    								   best_from.i = i;
-    								   best_from.j = j;
-    								   best_to.i = k;
-    								   best_to.j = m;
-    							   }
-    						   }
-    					   }
-    				   }
-    			   }
-    		   }
-    	   }
-       }
-        
-       if( best_cost > 0) {
- 	      Log.d("lines", "Find_Best_Movement "+Integer.toString(best_from.i)+" "+
-               Integer.toString(best_from.j)+" "+Integer.toString(best_to.i)+" "+Integer.toString(best_to.j) ); 
- 	      // These values are used by run(). Should be defined. 
- 	      active = best_from;
- 	      active_color = Myplane[best_from.i][best_from.j];
- 	      to = best_to;
- 	      saveStatus();
- 	      moveBall(best_from,best_to);
-       }
-}
+  
+ 
     
     public void startNewGame() {
     	Log.d("lines", "startNewGame "); 
     	for(int i=0; i<9; i++){
 	    	  for(int j=0;j<9;j++){
-	    		  Myplane[i][j] = (EColor.values())[0];
+	    		  myApp.Myplane[i][j] = (LinesApplication.EColor.values())[0];
 	    	  }
 	   }
 	      
-  	   Freeroom = 9*9;
-  	   Score = 0;
-	   active.i = -1;
-	   active.j = -1;
-	   balls_count = 7;
+  	   myApp.Freeroom = 9*9;
+  	   myApp.Score = 0;
+	   myApp.active.i = -1;
+	   myApp.active.j = -1;
+	   myApp.balls_count = 7;
 	   Movement_in_Progress = false;
 	   newballs();
 	   ball_position();
-       balls_count = Integer.parseInt(newBallsString);
+       myApp.balls_count = Integer.parseInt(newBallsString);
        newballs();
        UpdateGUI();
     }
@@ -849,19 +549,19 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     public void saveGame() {
     	FileOutputStream outputStream;
     	Log.d("lines", "saveGame"+newBallsString);
-    	balls_count = Integer.parseInt(newBallsString);
+    	myApp.balls_count = Integer.parseInt(newBallsString);
     	filename="lines"+newBallsString+".save";
     	try {
     	  outputStream = openFileOutput(filename, Context.MODE_PRIVATE);
     	  for (int i=0; i<9; i++) {
     	     for (int j=0; j<9 ; j++) {
-    	    	 outputStream.write(((Integer.toString(Myplane[i][j].int_EColor())+";").getBytes()));
+    	    	 outputStream.write(((Integer.toString(myApp.Myplane[i][j].int_EColor())+";").getBytes()));
     	     }
     	  }
-    	  for (int i=0; i<balls_count; i++) {
-    	     outputStream.write(((Integer.toString(newballs[i].int_EColor())+";").getBytes())); 
+    	  for (int i=0; i<myApp.balls_count; i++) {
+    	     outputStream.write(((Integer.toString(myApp.newballs[i].int_EColor())+";").getBytes())); 
     	  }
-    	  outputStream.write((Integer.toString(Score)).getBytes());
+    	  outputStream.write((Integer.toString(myApp.Score)).getBytes());
     	  //outputStream.write((Integer.toString(Score)+";").getBytes());
     	  //outputStream.write(Integer.toString(Freeroom).getBytes());
     	  
@@ -892,19 +592,19 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
            Log.d("lines","File content: " + s);
            for (int i=0; i<9; i++) {
         	   for (int j=0; j<9; j++) {
-        		   Myplane[i][j]= (EColor.values())[Integer.parseInt(mcolor[num++])];
+        		   myApp.Myplane[i][j]= (LinesApplication.EColor.values())[Integer.parseInt(mcolor[num++])];
         	       //num++;	   
         	   }
            }
            Log.d("lines","Newballs: "+newBallsString);
-           balls_count = Integer.parseInt(newBallsString);
-           for (int i=0; i<balls_count; i++ ) {
-              newballs[i] = (EColor.values())[Integer.parseInt(mcolor[num++])];
+           myApp.balls_count = Integer.parseInt(newBallsString);
+           for (int i=0; i<myApp.balls_count; i++ ) {
+              myApp.newballs[i] = (LinesApplication.EColor.values())[Integer.parseInt(mcolor[num++])];
               Log.d("lines","Newballs["+Integer.toString(i)+"]="+mcolor[num]);
               //num++;           		 
            }
-           Log.d("lines","Score+Freeroom ");
-           Score = Integer.parseInt(mcolor[num++]);
+           Log.d("lines","myApp.Score+myApp.Freeroom ");
+           myApp.Score = Integer.parseInt(mcolor[num++]);
            calc_freeroom();
            //Freeroom = Integer.parseInt(mcolor[num++]);
            //balls_count = 3;
@@ -985,13 +685,13 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
 			  db.delete(DbHelper.TABLE, DbHelper.C_SCORE + "=" + minScore, null);	
 		}*/
 		
-		if(nRec < 10 || Score > minScore) {
+		if(nRec < 10 || myApp.Score > minScore) {
 		   String myret; 
-		   Log.d("lines","EndGame " + UserName +" "+Integer.toString(Score));
+		   Log.d("lines","EndGame " + UserName +" "+Integer.toString(myApp.Score));
            Context context = this; 	
    		   //Intent intent = new Intent(context,EditRecActivity.class);
    		   Intent intent = new Intent(getBaseContext(),EditRecActivity.class);
-           intent.putExtra("Score",Integer.toString(Score));
+           intent.putExtra("Score",Integer.toString(myApp.Score));
            startActivityForResult(intent,2);
 		   //insertRecord(db,"Andrei",Integer.toString(Score),newBallsString);
            Log.d("lines","EndGame: OK for Safe" + UserName);
@@ -1017,7 +717,7 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
         int mDay = c.get(Calendar.DAY_OF_MONTH);
         int ID = 0;
         int delID = 0;
-        int Score = Integer.parseInt(MyScore);
+        int score = Integer.parseInt(MyScore);
         Cursor cursor;
     	
       	Log.d("lines","insertRecord "+MyScore);
@@ -1029,7 +729,7 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
 		DbHelper.C_CREATED_AT + " DESC"); //
 		//startManagingCursor(cursor); //
 		// Iterate over all the data and print it out
-		String user, score, output;
+		String user, sscore, output;
 		
 		if (cursor.moveToFirst()) {
 		  do {
@@ -1037,8 +737,8 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
 		      nRec++;
 		      ID   = Integer.parseInt(cursor.getString(cursor.getColumnIndex(DbHelper.C_ID)));
 		      user = cursor.getString(cursor.getColumnIndex(DbHelper.C_USER)); //
-		      score = cursor.getString(cursor.getColumnIndex(DbHelper.C_SCORE));
-		      rec_score = Integer.parseInt(score);
+		      sscore = cursor.getString(cursor.getColumnIndex(DbHelper.C_SCORE));
+		      rec_score = Integer.parseInt(sscore);
 		      Log.d("lines","insertRecord move:  " + Integer.toString(rec_score));
 		      if(minScore > rec_score) {
 			      minScore = rec_score;
@@ -1050,7 +750,7 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
 		        		
 			
 		//myScore = Integer.parseInt(Score);
-		if(nRec >= 10 && Score > minScore) {
+		if(nRec >= 10 && score > minScore) {
 			  // Record with minimal score should be deleted
 			Log.d("lines","insertRecord:  delete ID= " + Integer.toString(delID));
 			ID = delID;
@@ -1108,8 +808,8 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
                 		
             	UserName = data.getStringExtra("USERNAME");
             	//MyScore = data.getStringExtra("SCORE");
-            	Log.d("lines","info"+UserName+Integer.toString(Score));
-                insertRecord(db,UserName,Integer.toString(Score),newBallsString);          	
+            	Log.d("lines","info"+UserName+Integer.toString(myApp.Score));
+                insertRecord(db,UserName,Integer.toString(myApp.Score),newBallsString);          	
   		        db.close();
             }
             else {
@@ -1119,25 +819,25 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     }
     
     private void newballs() {
-       Log.d("lines", "newballs "+ Integer.toString(balls_count));
+       Log.d("lines", "newballs "+ Integer.toString(myApp.balls_count));
        //balls_count = Integer.parseInt(newBallsString);
        //if(Freeroom < balls_count) {
        //   balls_count = Freeroom;
        //}	
-       for(int i=0; i< balls_count; i++ ){
+       for(int i=0; i< myApp.balls_count; i++ ){
     	  int randnum = rand.nextInt();
     	  if(randnum<0) randnum = -randnum;
     	  Log.d("lines", "randnum "+ Integer.toString(randnum));
-    	  newballs[i] = (EColor.values())[(randnum%7)+1];
+    	  myApp.newballs[i] = (LinesApplication.EColor.values())[(randnum%7)+1];
          }  
     }
     
     private void calc_freeroom() {
-    	Freeroom =0;
+    	myApp.Freeroom =0;
     	for (int i=0;i<9;i++) {
     		for (int j=0;j<9;j++) {
-    			if(Myplane[i][j] == EColor.NONE) {
-    				Freeroom++;
+    			if(myApp.Myplane[i][j] == LinesApplication.EColor.NONE) {
+    				myApp.Freeroom++;
     			}
     		}
     	}
@@ -1145,23 +845,23 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     
     private void ball_position() {
        int n;
-       Log.d("lines", "newballs "+ Integer.toString(balls_count));
+       Log.d("lines", "newballs "+ Integer.toString(myApp.balls_count));
        //if(Freeroom < balls_count) 
        //	   balls_count = Freeroom;
-       for(int k=0; k < balls_count; k++) {
-    	  n = rand.nextInt()%Freeroom;
+       for(int k=0; k < myApp.balls_count; k++) {
+    	  n = rand.nextInt()%myApp.Freeroom;
     	  if(n<0) n=-n;
     	  int count = 0;
     	  boolean found = false;
     	  for(int i=0; i < 9; i++ ) {
     		  for(int j=0; j < 9; j++) {
-    			  if(Myplane[i][j] == EColor.NONE) {
+    			  if(myApp.Myplane[i][j] == LinesApplication.EColor.NONE) {
     				  if(count == n) {
-    					  Myplane[i][j] = newballs[k];
-    					  lastballs_pos[k].i = i;
-    					  lastballs_pos[k].j = j;
+    					  myApp.Myplane[i][j] = myApp.newballs[k];
+    					  myApp.lastballs_pos[k].i = i;
+    					  myApp.lastballs_pos[k].j = j;
     					  found = true;
-    					  check_for_lines(new coordinate(i,j));
+    					  myApp.check_for_lines(i,j);
     					  Log.d("lines", "i: " + Integer.toString(i)+ "j: " + Integer.toString(j));
      				  }
     				  count ++;
@@ -1170,8 +870,8 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     		  }
     		  if(found) break;
     	  }
-    	  Freeroom--;
-    	  if (Freeroom == 0)
+    	  myApp.Freeroom--;
+    	  if (myApp.Freeroom == 0)
     		  break;
        }
        
@@ -1192,15 +892,15 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     	  if(skip == 0) {
      	      //EColor mycolor = Myplane[active.i][active.j];
     		  //EColor mycolor = Myplane[Path[currstep].i][Path[currstep].j];
-    		  Log.d("lines", "Color from: " + Integer.toString(active.i)+ " " + Integer.toString(active.j));
-     	      Log.d("lines", "Path currstep: " + Integer.toString(currstep)+ " " + Integer.toString(pathlength));
+    		  Log.d("lines", "Color from: " + Integer.toString(myApp.active.i)+ " " + Integer.toString(myApp.active.j));
+     	      Log.d("lines", "Path currstep: " + Integer.toString(myApp.currstep)+ " " + Integer.toString(myApp.pathlength));
      	      //ScoreView.setText(Integer.toString(Score) + "  ");
      	      
-    	      if(currstep + 1 < pathlength) {
-    	         Myplane[Path[currstep].i][Path[currstep].j] = EColor.NONE;
-    	         currstep++;
-    	         active = Path[currstep];
-    	         Myplane[active.i][active.j] = active_color;
+    	      if(myApp.currstep + 1 < myApp.pathlength) {
+    	         myApp.Myplane[myApp.Path[myApp.currstep].i][myApp.Path[myApp.currstep].j] = LinesApplication.EColor.NONE;
+    	         myApp.currstep++;
+    	         myApp.active = myApp.Path[myApp.currstep];
+    	         myApp.Myplane[myApp.active.i][myApp.active.j] = myApp.active_color;
     	         //Log.d("lines", "Set color: " + Integer.toString(active.i)+ " " + Integer.toString(active.j)+ " " + Integer.toString(mycolor.int_EColor()));
            	  }
     	      skip = 2;
@@ -1219,24 +919,24 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
       
       // End of painting to canvas. system will paint with this canvas,to the surface.
       holder.unlockCanvasAndPost(canvas);
-      if(Movement_in_Progress && currstep == pathlength - 1 ) {
-    	  Log.d("lines", "End of movement: " + Integer.toString(currstep));
+      if(Movement_in_Progress && myApp.currstep == myApp.pathlength - 1 ) {
+    	  Log.d("lines", "End of movement: " + Integer.toString(myApp.currstep));
     	  Movement_in_Progress = false;
-          clear_visited();
+          myApp.clear_visited();
           skip = 2;
           
-          if(!check_for_lines(active)) {
+          if(!myApp.check_for_lines(myApp.active.i,myApp.active.j)) {
             ball_position();
             newballs();
-            if(Freeroom == 0) {
+            if(myApp.Freeroom == 0) {
             	EndGame();
             }
           } 
           else {
-        	  redo_is_active = false;
+        	  myApp.redo_is_active = false;
           }
-          active.i = -1;
-          active.j = -1;
+          myApp.active.i = -1;
+          myApp.active.j = -1;
           UpdateGUI();
       }
       
@@ -1331,10 +1031,10 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
  	    	  paint.setColor(color_2); 
  	      }
  	      canvas.drawRect(square , paint );  
-          if(Myplane[i][j] != EColor.NONE){
+          if(myApp.Myplane[i][j] != LinesApplication.EColor.NONE){
 
     	      
-        	  if(i == active.i && j == active.j ) {
+        	  if(i == myApp.active.i && j == myApp.active.j ) {
     	    	  top = 20+xwidth*i+ddd-jmp;
     	    	  left = 20+xtop*j+ddd-jmp;
     	    	  bottom = 20+xwidth*(i+1)-ddd+jmp;
@@ -1347,7 +1047,7 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     	    	  right = 20+xtop*(j+1)-ddd;
     	      }   
               RectF oval = new RectF(top,left,bottom,right);
-    	      EColor ecolor = Myplane[i][j];
+    	      LinesApplication.EColor ecolor = myApp.Myplane[i][j];
     	      int color_ = Colors[ecolor.int_EColor()][0];
               int color_weak = Colors[ecolor.int_EColor()][1];
               draw_arc(canvas,paint,color_,color_weak,oval);
@@ -1370,7 +1070,7 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     color_1 = getResources().getColor(R.color.color_1);
     color_2 = getResources().getColor(R.color.color_2);
   
-    for(int i=0; i<balls_count; i++) {
+    for(int i=0; i<myApp.balls_count; i++) {
           float top,left,right,bottom = 0;
  	      RectF square;
  	      
@@ -1388,7 +1088,7 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
  	    	  paint.setColor(color_2); 
  	      }
  	      canvas.drawRect(square , paint );  
-          if(newballs[i] != EColor.NONE) {
+          if(myApp.newballs[i] != LinesApplication.EColor.NONE) {
         	  RectF oval;
 	    	  if (vert == 1) {
         	     oval = new RectF(border+xwidth*i+ddd,msize+border+ddd,border+xwidth*(i+1)-ddd,msize+border+xtop-ddd);
@@ -1397,7 +1097,7 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
         		 oval = new RectF(msize+border+ddd,border+xtop*i+ddd,msize+border+xwidth-ddd,border+xtop*(i+1)-ddd);
         	  }        		  
               
-              EColor ecolor = newballs[i];
+              LinesApplication.EColor ecolor = myApp.newballs[i];
 	          int color_ = Colors[ecolor.int_EColor()][0];
               int color_weak = Colors[ecolor.int_EColor()][1];
               draw_arc(canvas,paint,color_,color_weak,oval);  
@@ -1477,8 +1177,8 @@ public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
 		String key) {
 	// TODO Auto-generated method stub
 	Log.d("lines", "onSharedPreferenceChanges"+newBallsString);
-	newBallsString = ((LinesApplication)getApplication()).prefs.getString("newballs", "4");
-	balls_count = Integer.parseInt(newBallsString);
+	newBallsString = myApp.prefs.getString("newballs", "4");
+	myApp.balls_count = Integer.parseInt(newBallsString);
 	loadGame();
 }
 } 
