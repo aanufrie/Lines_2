@@ -4,8 +4,10 @@ package com.novo.aanufrie;
 import android.app.Application;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.widget.TextView;
 
 public class LinesApplication extends Application implements
 		OnSharedPreferenceChangeListener {
@@ -23,6 +25,9 @@ public class LinesApplication extends Application implements
 	public coordinate all_balls[] = new coordinate[36];
 	public int currstep = 0;
 	public boolean visited[][] = new boolean[9][9];
+	public boolean Movement_in_Progress=false;
+	public boolean Replacement_support=true;
+	public boolean Replacement_in_Progress=false;
 	public int pathlength=0;
 	int balls_in_lines =0;
 	public int Freeroom = 0;
@@ -31,6 +36,8 @@ public class LinesApplication extends Application implements
 	public int balls_count = 0;
 	public boolean redo_is_active = false;
 	public boolean robot_is_active = false;
+	public Handler myHandler;
+	public TextView ScoreView;
 	
 	 public enum EColor {
 		  NONE(0),RED(1),GREEN(2),BLUE(3),YELLOW(4),BLACK(5),VIOLET(6),ORANGE(7);
@@ -46,6 +53,12 @@ public class LinesApplication extends Application implements
 	      public int j=0;
 	      public coordinate(int mi, int mj) {i = mi; j = mj;}
 	 }
+	 
+	 public  Runnable myRunnable = new Runnable() {
+	         public void run() {
+	        	 ScoreView.setText(Integer.toString(Score)+ "  "); 
+	         }
+	      };
 	 
 	 public int Estimate_Line(coordinate from, coordinate direction){
 	    	int cost = 0;
@@ -255,6 +268,7 @@ public class LinesApplication extends Application implements
 	    	}
 	    }
 	    
+	    
 	    public boolean check_for_lines(int x, int y) {
 	        coordinate ball_pos = new coordinate(x,y);
 	    	LinesApplication.EColor mycolor = Myplane[ball_pos.i][ball_pos.j];
@@ -365,10 +379,11 @@ public class LinesApplication extends Application implements
 	    				   for (int m=0; m<9; m++) {
 	    					   if(Myplane[k][m] == LinesApplication.EColor.NONE) {
 	    						   clear_visited();
+	    						   currstep=0;
 	    						   if (find_path(new LinesApplication.coordinate(i,j),new LinesApplication.coordinate(k,m))) {
 	    							   cost = Estimate_Position(new LinesApplication.coordinate(i,j),new LinesApplication.coordinate(k,m));
 	    							   if (cost > 0)
-	    							       Log.d("lines", "Find_Best_Movement " + Integer.toString(i)+":"+Integer.toString(j)+"->"+Integer.toString(k)+":"+Integer.toString(m)+" " + Integer.toString(cost));
+	    							       //Log.d("lines", "Find_Best_Movement " + Integer.toString(i)+":"+Integer.toString(j)+"->"+Integer.toString(k)+":"+Integer.toString(m)+" " + Integer.toString(cost));
 	    							   if (cost > best_cost) {
 	    								   best_cost = cost;
 	    								   best_from.i = i;
@@ -406,6 +421,29 @@ public class LinesApplication extends Application implements
 	       before.i = active.i; before.j = active.j;
 	       redo_is_active = true;
 	    }
+	  
+	  public void moveBall(LinesApplication.coordinate from, LinesApplication.coordinate to) {
+	      LinesApplication.EColor mcol = Myplane[from.i][from.j];
+	      Log.d("lines", "moveBall Freeroom:" + Integer.toString(Freeroom)+ " " + Integer.toString(mcol.int_EColor()));
+	      clear_visited();
+	      pathlength = 1;
+	      currstep = 0;
+	      //ScoreView.setText(Integer.toString(Score++)+ "  "); 
+	      if(find_path(from,to)) {
+	    	 Movement_in_Progress = true;
+	    	 Log.d("lines", "moveBall pathlength:" + Integer.toString(pathlength));
+	    	 currstep=0;
+	       	 for(int i=0; i<pathlength;i++) {
+	    		 Log.d("lines", "Path:" + Integer.toString(i) + " " + Integer.toString(Path[i].i) + " " + Integer.toString(Path[i].j)); 
+	    	 }
+	      }
+	      myHandler.post(myRunnable);
+      }
+	  
+	  public void replaceBalls() {
+	      Replacement_in_Progress = true;
+  	      myHandler.post(myRunnable);
+      }	 
 	  
 	  
 	@Override

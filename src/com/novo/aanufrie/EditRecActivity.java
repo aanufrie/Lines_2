@@ -1,5 +1,6 @@
 package com.novo.aanufrie;
 
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.app.Activity;
 import android.content.Intent;
@@ -35,6 +36,8 @@ public class EditRecActivity extends Activity {
     	UserName = (EditText) findViewById(R.id.editName);
     	
     	ScoreView.setText("Your score is " + Score);
+    	MediaPlayer mediaPlayer = MediaPlayer.create(getBaseContext(), R.raw.champ);
+    	mediaPlayer.start();
         SaveBtn.setOnClickListener(new OnClickListener() {
         	
             @Override

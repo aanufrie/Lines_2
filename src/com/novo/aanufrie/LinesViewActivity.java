@@ -14,6 +14,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
@@ -60,17 +61,17 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
   private ToggleButton robotBtn;
   private SurfaceView surface;
   private SurfaceHolder holder;
-  private TextView ScoreView;
+  //private TextView ScoreView;
   private boolean locker = true;
   private Thread thread;
   private int radiusBlack, radiusWhite;
   private boolean left = true;
-
+  private MediaPlayer mP;  //MediaPlayer.create(getBaseContext(), R.raw.champ);
   
   private boolean showPath = true;
   //private coordinate Path[] = new coordinate[81];
   
-  private boolean Movement_in_Progress = false;
+  //private boolean Movement_in_Progress = false;
   
   private int skip = 0;
   static final int SAVE_OR_NOT = 0;
@@ -166,26 +167,38 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
 		switch (item.getItemId())
 		{
 			case R.id.action_settings:
+				Log.d("lines","Before SettingActivity" );
 				saveGame();
 				startActivity(new Intent(this, SettingActivity.class));
+				newBallsString=myApp.prefs.getString("newballs","4");
+				Log.d("lines","After SettingActivity");
 				myApp.balls_count=Integer.parseInt(newBallsString);
+				if (myApp.balls_count == 3 )
+					myApp.Replacement_support = false;
 				loadGame();
 				break;
 	    }
 		
 		return true;
 	}
-	
-	
+   
+	public void onDestroy(Bundle savedInstanceState)	{
+	  	Log.d("lines", "onDestroy" );
+    	super.onCreate(savedInstanceState);
+	}
+		
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	Log.d("lines", "onCreate" );
     	super.onCreate(savedInstanceState);
     	myApp = (LinesApplication)getApplication();
+    	myApp.myHandler = new Handler();
     	newBallsString = myApp.prefs.getString("newballs", "4");
     	Log.d("lines", "New Balls " + newBallsString );
     	filename="lines"+newBallsString+".save";
     	myApp.balls_count = Integer.parseInt(newBallsString);
+    	if (myApp.balls_count == 3 )
+    		myApp.Replacement_support = false;
     	setContentView(R.layout.activity_surface_view);
     	
     	newGameBtn = (Button) findViewById(R.id.buttonswap);
@@ -194,7 +207,7 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     	redoBtn      = (Button) findViewById(R.id.buttonredo);
     	helpBtn      = (Button)findViewById(R.id.buttonhelp);
     	robotBtn     = (ToggleButton)findViewById(R.id.buttonrobot);
-    	ScoreView = (TextView) findViewById(R.id.myScore);
+    	myApp.ScoreView = (TextView) findViewById(R.id.myScore);
     	surface = (SurfaceView) findViewById(R.id.mysurface);
     	
         //active = new coordinate(0,0);
@@ -203,7 +216,7 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
         //redo   = new coordinate(0,0);
         
         holder = surface.getHolder();
-        
+        mP=MediaPlayer.create(getBaseContext(), R.raw.jball);
 
         //And in the timer, we pass the runnable to the handler:
 
@@ -253,7 +266,7 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
   	 	      myApp.active_color = myApp.Myplane[myApp.best_from.i][myApp.best_from.j];
   	 	      myApp.to = myApp.best_to;
   	 	      myApp.saveStatus();
-  	 	      moveBall(myApp.best_from,myApp.best_to);
+  	 	      myApp.moveBall(myApp.best_from,myApp.best_to);
 	       
         	}
         });
@@ -279,42 +292,74 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
         	
       @Override
       public boolean onTouch(View arg0, MotionEvent event) {
-        float x = event.getX();
-        float y = event.getY();
-        int i = (int)((x-20)/xwidth);
-        int j = (int)((y-20)/xtop);
-        
-        if(i >= 9 || j >= 9 || i < 0 || j < 0)
-        	return false;
-        if(Movement_in_Progress)
-        	return false;
-        
-        if(myApp.active.i >= 0 && myApp.active.j >= 0) {
-        	if(myApp.Myplane[i][j] == LinesApplication.EColor.NONE) {
-        		myApp.to.i = i;
-        		myApp.to.j = j;
-        		Log.d("lines", "to: " + Integer.toString(myApp.active.i)+ " " + Integer.toString(myApp.active.j));
-        		myApp.saveStatus();
-        		moveBall(myApp.active,myApp.to);
-        	}
-        	else {
-        	    myApp.active.i = i;
-        	    myApp.active.j = j;
-        	    myApp.active_color = myApp.Myplane[i][j];
-        	    Log.d("lines", "to: " + Integer.toString(myApp.active.i)+ " " + Integer.toString(myApp.active.j)); 
-        	}
+        switch (event.getAction()) {
+        case MotionEvent.ACTION_DOWN: 
+        {
+        	float x = event.getX();
+            float y = event.getY();
+            int i = (int)((x-20)/xwidth);
+            int j = (int)((y-20)/xtop);
+            
+            if(i >= 9 || j >= 9 || i < 0 || j < 0)
+            	return false;
+            if(myApp.Movement_in_Progress || 
+               myApp.Replacement_in_Progress )
+            	return false;
+            
+            if(myApp.active.i >= 0 && myApp.active.j >= 0) {
+            	if(myApp.Myplane[i][j] == LinesApplication.EColor.NONE) {
+            		myApp.to.i = i;
+            		myApp.to.j = j;
+            		Log.d("lines", "to: " + Integer.toString(myApp.active.i)+ " " + Integer.toString(myApp.active.j));
+            		myApp.saveStatus();
+            		myApp.moveBall(myApp.active,myApp.to);
+            	}
+            	else {
+            	    myApp.active.i = i;
+            	    myApp.active.j = j;
+            	    myApp.active_color = myApp.Myplane[i][j];
+            	    Log.d("lines", "to: " + Integer.toString(myApp.active.i)+ " " + Integer.toString(myApp.active.j)); 
+            	}
+            }
+            else {
+            	if(myApp.Myplane[i][j] != LinesApplication.EColor.NONE) {
+            		myApp.active.i = i;
+            		myApp.active.j = j;
+            		myApp.active_color = myApp.Myplane[i][j];
+            		Log.d("lines", "to: " + Integer.toString(myApp.active.i)+ " " + Integer.toString(myApp.active.j));        
+            	}
+            }
+               	
+        	
+            return true;
         }
-        else {
-        	if(myApp.Myplane[i][j] != LinesApplication.EColor.NONE) {
-        		myApp.active.i = i;
-        		myApp.active.j = j;
-        		myApp.active_color = myApp.Myplane[i][j];
-        		Log.d("lines", "to: " + Integer.toString(myApp.active.i)+ " " + Integer.toString(myApp.active.j));        
-        	}
-        }
-           	
-    	
-        return false;
+        case MotionEvent.ACTION_MOVE:  
+        	float x = event.getX();
+            float y = event.getY();
+            int i = (int)((x-20)/xwidth);
+            int j = (int)((y-20)/xtop);
+            if(!myApp.Replacement_support)
+                return false;
+            if(i >= 9 || j >= 9 || i < 0 || j < 0)
+            	return false;
+            if(myApp.Movement_in_Progress || 
+               myApp.Replacement_in_Progress )
+            	return false;
+            
+            if((myApp.active.i != i || myApp.active.j != j) &&
+            	myApp.Myplane[i][j] != LinesApplication.EColor.NONE	) {
+            	if ( ((i - myApp.active.i == 1 || myApp.active.i - i == 1) && myApp.active.j - j == 0) ||
+            	     ((j - myApp.active.j == 1 || myApp.active.j - j == 1) && myApp.active.i - i == 0)) { 
+            		myApp.to.i = i;
+            		myApp.to.j = j;
+            		Log.d("lines", "REPLACE: " + Integer.toString(myApp.active.i)+ " " + Integer.toString(myApp.active.j));
+            		//myApp.saveStatus();
+            		myApp.replaceBalls();
+            	}
+            }
+            return true;
+        }  
+        return true; 
       }
 	
     });      
@@ -348,47 +393,34 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
   
      private void UpdateGUI() {
         //tv.setText(String.valueOf(i)); //This causes a runtime error.
-        myHandler.post(myRunnable);
+        myApp.myHandler.post(myApp.myRunnable);
      }
     
      final Runnable myRunnable = new Runnable() {
          public void run() {
-        	 ScoreView.setText(Integer.toString(myApp.Score)+ "  "); 
+        	 //myApp.ScoreView.setText(Integer.toString(myApp.Score)+ "  ");
+        	 robotBtn.setChecked(false);
          }
       };
      
    
     
-    private void moveBall(LinesApplication.coordinate from, LinesApplication.coordinate to) {
+    /*private void moveBall(LinesApplication.coordinate from, LinesApplication.coordinate to) {
       LinesApplication.EColor mcol = myApp.Myplane[from.i][from.j];
       Log.d("lines", "moveBall Freeroom:" + Integer.toString(myApp.Freeroom)+ " " + Integer.toString(mcol.int_EColor()));
       myApp.clear_visited();
       myApp.pathlength = 1;
       myApp.currstep = 0;
-      //ScoreView.setText(Integer.toString(Score++)+ "  "); 
-      if(myApp.find_path(from,to)) {
-         /*Myplane[from.i][from.j] = EColor.NONE;
-         Myplane[to.i][to.j] = mcol;*/
-    	 //Log.d("lines", "addpath:" + "0:"+ " " + Integer.toString(from.i)+ " " + Integer.toString(from.j));
-    	 //Path[0].i = from.i;
-	     //Path[0].j = from.j;
-    	 Movement_in_Progress = true;
+       if(myApp.find_path(from,to)) {
+    	 myApp.Movement_in_Progress = true;
     	 Log.d("lines", "moveBall pathlength:" + Integer.toString(myApp.pathlength));
     	 myApp.currstep=0;
        	 for(int i=0; i<myApp.pathlength;i++) {
     		 Log.d("lines", "Path:" + Integer.toString(i) + " " + Integer.toString(myApp.Path[i].i) + " " + Integer.toString(myApp.Path[i].j)); 
     	 }
-         /*if(!check_for_lines(to)) {
-            ball_position();
-            newballs();
-         }*/
       }
-      myHandler.post(myRunnable);
-      //ScoreView.setText(Integer.toString(Score++)+ "  "); 
-      //active.i = -1;
-      //active.j = -1;
-    		  
-    }
+      myApp.myHandler.post(myApp.myRunnable);
+    }*/
     
   
     
@@ -526,30 +558,33 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
  
     
     public void startNewGame() {
-    	Log.d("lines", "startNewGame "); 
+    	Log.d("lines", "startNewGame ");
     	for(int i=0; i<9; i++){
 	    	  for(int j=0;j<9;j++){
 	    		  myApp.Myplane[i][j] = (LinesApplication.EColor.values())[0];
 	    	  }
 	   }
-	      
+       if (myApp.robot_is_active) {
+          	myApp.robot_is_active = false;
+            stopService(new Intent(getBaseContext(),RobotService.class));
+            myHandler.post(myRunnable);
+            // disable element
+       }   
   	   myApp.Freeroom = 9*9;
   	   myApp.Score = 0;
 	   myApp.active.i = -1;
 	   myApp.active.j = -1;
-	   myApp.balls_count = 7;
-	   Movement_in_Progress = false;
-	   newballs();
-	   ball_position();
-       myApp.balls_count = Integer.parseInt(newBallsString);
-       newballs();
+	   myApp.Movement_in_Progress = false;
+	   newballs(7);
+	   balls_position(7);
+       newballs(myApp.balls_count);
        UpdateGUI();
     }
 
     public void saveGame() {
     	FileOutputStream outputStream;
     	Log.d("lines", "saveGame"+newBallsString);
-    	myApp.balls_count = Integer.parseInt(newBallsString);
+    	//myApp.balls_count = Integer.parseInt(newBallsString);
     	filename="lines"+newBallsString+".save";
     	try {
     	  outputStream = openFileOutput(filename, Context.MODE_PRIVATE);
@@ -597,7 +632,7 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
         	   }
            }
            Log.d("lines","Newballs: "+newBallsString);
-           myApp.balls_count = Integer.parseInt(newBallsString);
+           //myApp.balls_count = Integer.parseInt(newBallsString);
            for (int i=0; i<myApp.balls_count; i++ ) {
               myApp.newballs[i] = (LinesApplication.EColor.values())[Integer.parseInt(mcolor[num++])];
               Log.d("lines","Newballs["+Integer.toString(i)+"]="+mcolor[num]);
@@ -642,6 +677,12 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
       	Log.d("lines","EndGame");
       	Cursor cursor; 
       	
+      	if (myApp.robot_is_active) {
+          	myApp.robot_is_active = false;
+            stopService(new Intent(getBaseContext(),RobotService.class));
+            myHandler.post(myRunnable);
+            // disable element
+      	}
     	
     	dbHelper = new DbHelper(this); 
     	Log.d("lines","EndGame dbHelper created");
@@ -818,13 +859,13 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
         }
     }
     
-    private void newballs() {
+    private void newballs(int num) {
        Log.d("lines", "newballs "+ Integer.toString(myApp.balls_count));
        //balls_count = Integer.parseInt(newBallsString);
        //if(Freeroom < balls_count) {
        //   balls_count = Freeroom;
        //}	
-       for(int i=0; i< myApp.balls_count; i++ ){
+       for(int i=0; i< num; i++ ){
     	  int randnum = rand.nextInt();
     	  if(randnum<0) randnum = -randnum;
     	  Log.d("lines", "randnum "+ Integer.toString(randnum));
@@ -843,12 +884,13 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     	}
     }
     
-    private void ball_position() {
+    private void balls_position(int num) {
        int n;
        Log.d("lines", "newballs "+ Integer.toString(myApp.balls_count));
+       calc_freeroom();
        //if(Freeroom < balls_count) 
        //	   balls_count = Freeroom;
-       for(int k=0; k < myApp.balls_count; k++) {
+       for(int k=0; k < num; k++) {
     	  n = rand.nextInt()%myApp.Freeroom;
     	  if(n<0) n=-n;
     	  int count = 0;
@@ -861,7 +903,8 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     					  myApp.lastballs_pos[k].i = i;
     					  myApp.lastballs_pos[k].j = j;
     					  found = true;
-    					  myApp.check_for_lines(i,j);
+    					  if (myApp.check_for_lines(i,j))
+    						  myApp.redo_is_active = false;
     					  Log.d("lines", "i: " + Integer.toString(i)+ "j: " + Integer.toString(j));
      				  }
     				  count ++;
@@ -888,7 +931,7 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
         continue;
       }
       //ScoreView.setText(Integer.toString(Score) + "  ");
-      if(Movement_in_Progress) {
+      if(myApp.Movement_in_Progress) {
     	  if(skip == 0) {
      	      //EColor mycolor = Myplane[active.i][active.j];
     		  //EColor mycolor = Myplane[Path[currstep].i][Path[currstep].j];
@@ -897,7 +940,8 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
      	      //ScoreView.setText(Integer.toString(Score) + "  ");
      	      
     	      if(myApp.currstep + 1 < myApp.pathlength) {
-    	         myApp.Myplane[myApp.Path[myApp.currstep].i][myApp.Path[myApp.currstep].j] = LinesApplication.EColor.NONE;
+    	         //mP.start();
+    	    	 myApp.Myplane[myApp.Path[myApp.currstep].i][myApp.Path[myApp.currstep].j] = LinesApplication.EColor.NONE;
     	         myApp.currstep++;
     	         myApp.active = myApp.Path[myApp.currstep];
     	         myApp.Myplane[myApp.active.i][myApp.active.j] = myApp.active_color;
@@ -919,15 +963,15 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
       
       // End of painting to canvas. system will paint with this canvas,to the surface.
       holder.unlockCanvasAndPost(canvas);
-      if(Movement_in_Progress && myApp.currstep == myApp.pathlength - 1 ) {
+      if(myApp.Movement_in_Progress && myApp.currstep == myApp.pathlength - 1 ) {
     	  Log.d("lines", "End of movement: " + Integer.toString(myApp.currstep));
-    	  Movement_in_Progress = false;
+    	  myApp.Movement_in_Progress = false;
           myApp.clear_visited();
           skip = 2;
           
           if(!myApp.check_for_lines(myApp.active.i,myApp.active.j)) {
-            ball_position();
-            newballs();
+            balls_position(myApp.balls_count);
+            newballs(myApp.balls_count);
             if(myApp.Freeroom == 0) {
             	EndGame();
             }
@@ -939,6 +983,29 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
           myApp.active.j = -1;
           UpdateGUI();
       }
+      if (myApp.Replacement_in_Progress) {
+          LinesApplication.EColor mcol = myApp.Myplane[myApp.active.i][myApp.active.j];
+	      LinesApplication.EColor mcol2 = myApp.Myplane[myApp.to.i][myApp.to.j];
+	      myApp.Myplane[myApp.active.i][myApp.active.j] = mcol2;
+	      myApp.Myplane[myApp.to.i][myApp.to.j] = mcol;
+	      if(!myApp.check_for_lines(myApp.active.i,myApp.active.j) &&
+             !myApp.check_for_lines(myApp.to.i,myApp.to.j)) {
+	           balls_position(myApp.balls_count);
+	           newballs(myApp.balls_count);
+	           if(myApp.Freeroom == 0) {
+	             EndGame();
+	           }
+               myApp.redo_is_active=false; 	           
+	      }
+	      else {
+	    	  myApp.redo_is_active = false;
+	      }
+	      myApp.active.i = -1;
+	      myApp.active.j = -1;
+	      UpdateGUI();
+	      myApp.Replacement_in_Progress=false;
+      }
+      
       
     }
   }
@@ -1139,7 +1206,9 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
 
   @Override
   protected void onPause() {    
-    saveGame();
+	Log.d("lines", "LinesViewActivity onPause");
+	saveGame();
+	stopService(new Intent(getBaseContext(),RobotService.class));
 	super.onPause();
     pause();
   }
@@ -1161,7 +1230,12 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
   @Override
   protected void onResume() {
     Log.d("lines", "LinesViewActivity resume");
-	super.onResume();
+    newBallsString = myApp.prefs.getString("newballs", "4");
+	myApp.balls_count = Integer.parseInt(newBallsString);
+	if (myApp.balls_count == 3 )
+		myApp.Replacement_support = false;
+	loadGame();
+    super.onResume();
     resume();    
   }
 
@@ -1179,6 +1253,8 @@ public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
 	Log.d("lines", "onSharedPreferenceChanges"+newBallsString);
 	newBallsString = myApp.prefs.getString("newballs", "4");
 	myApp.balls_count = Integer.parseInt(newBallsString);
+	if (myApp.balls_count == 3 )
+		myApp.Replacement_support = false;
 	loadGame();
 }
 } 
