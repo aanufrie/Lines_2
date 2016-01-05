@@ -17,6 +17,7 @@ import android.graphics.RectF;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Menu;
@@ -46,6 +47,7 @@ import java.util.Iterator;
 import java.util.Random;
 
 import com.novo.aanufrie.DbHelper;
+import com.novo.aanufrie.LinesApplication.EColor;
 import com.novo.aanufrie.R;
 
 
@@ -108,7 +110,7 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     
   //public EColor Myplane[][] = new EColor[9][9];
   //public EColor MyplaneCopy[][] = new EColor[9][9];
-  public int Colors[][] = new int[8][2];
+  public int Colors[][] = new int[9][2];
   
   //private coordinate all_balls[] = new coordinate[36];
   
@@ -173,8 +175,15 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
 				newBallsString=myApp.prefs.getString("newballs","4");
 				Log.d("lines","After SettingActivity");
 				myApp.balls_count=Integer.parseInt(newBallsString);
-				if (myApp.balls_count == 3 )
+				if (myApp.balls_count == 3 ) {
 					myApp.Replacement_support = false;
+				}
+				loadGame();
+				break;
+			case R.id.program_info:
+				Log.d("lines","Program Info");
+				saveGame();
+				startActivity(new Intent(this,ProgramInfoActivity.class));
 				loadGame();
 				break;
 	    }
@@ -197,8 +206,9 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     	Log.d("lines", "New Balls " + newBallsString );
     	filename="lines"+newBallsString+".save";
     	myApp.balls_count = Integer.parseInt(newBallsString);
-    	if (myApp.balls_count == 3 )
+    	if (myApp.balls_count == 3 ) {
     		myApp.Replacement_support = false;
+    	}
     	setContentView(R.layout.activity_surface_view);
     	
     	newGameBtn = (Button) findViewById(R.id.buttonswap);
@@ -209,7 +219,8 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     	robotBtn     = (ToggleButton)findViewById(R.id.buttonrobot);
     	myApp.ScoreView = (TextView) findViewById(R.id.myScore);
     	surface = (SurfaceView) findViewById(R.id.mysurface);
-    	
+ 
+        
         //active = new coordinate(0,0);
         //to = new coordinate(0,0);
         //before = new coordinate(0,0);
@@ -303,7 +314,8 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
             if(i >= 9 || j >= 9 || i < 0 || j < 0)
             	return false;
             if(myApp.Movement_in_Progress || 
-               myApp.Replacement_in_Progress )
+               myApp.Replacement_in_Progress || 
+               myApp.Freeroom == 0)
             	return false;
             
             if(myApp.active.i >= 0 && myApp.active.j >= 0) {
@@ -338,7 +350,7 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
             float y = event.getY();
             int i = (int)((x-20)/xwidth);
             int j = (int)((y-20)/xtop);
-            if(!myApp.Replacement_support)
+            if(!myApp.Replacement_support || myApp.Freeroom == 0)
                 return false;
             if(i >= 9 || j >= 9 || i < 0 || j < 0)
             	return false;
@@ -346,12 +358,12 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
                myApp.Replacement_in_Progress )
             	return false;
             
-            if((myApp.active.i != i || myApp.active.j != j) &&
-            	myApp.Myplane[i][j] != LinesApplication.EColor.NONE	) {
+            if((myApp.active.i != i || myApp.active.j != j) ) {
             	if ( ((i - myApp.active.i == 1 || myApp.active.i - i == 1) && myApp.active.j - j == 0) ||
             	     ((j - myApp.active.j == 1 || myApp.active.j - j == 1) && myApp.active.i - i == 0)) { 
             		myApp.to.i = i;
             		myApp.to.j = j;
+            		myApp.saveStatus();
             		Log.d("lines", "REPLACE: " + Integer.toString(myApp.active.i)+ " " + Integer.toString(myApp.active.j));
             		//myApp.saveStatus();
             		myApp.replaceBalls();
@@ -378,13 +390,17 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
       Colors[6][1]= getResources().getColor(R.color.color_violet_weak);
       Colors[7][0]= getResources().getColor(R.color.color_orange); 
       Colors[7][1]= getResources().getColor(R.color.color_orange_weak);
+      Colors[8][0]= getResources().getColor(R.color.color_orange); 
+      Colors[8][1]= getResources().getColor(R.color.color_orange_weak);
       
       for(int i=0; i<9; i++){
     	  for(int j=0;j<9;j++){
     		  myApp.Myplane[i][j] = (LinesApplication.EColor.values())[(i+j)%8];
     	  }
       }
- 
+     	myApp.curr_Color=EColor.RED;
+    	myApp.ColorR= Colors[myApp.curr_Color.int_EColor()][0];	
+        myApp.ColorR_weak = Colors[myApp.curr_Color.int_EColor()][1];
        
       if(!loadGame()) startNewGame();
       //UpdateGUI();
@@ -431,8 +447,11 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     		   myApp.Myplane[myApp.lastballs_pos[i].i][myApp.lastballs_pos[i].j] = (LinesApplication.EColor.values())[0];
     		   myApp.Freeroom++;
     	   }
-    	   myApp.Myplane[myApp.before.i][myApp.before.j]= myApp.Myplane[myApp.redo.i][myApp.redo.j];
-    	   myApp.Myplane[myApp.redo.i][myApp.redo.j] = (LinesApplication.EColor.values())[0];
+    	   LinesApplication.EColor col1 = myApp.Myplane[myApp.redo.i][myApp.redo.j];
+    	   LinesApplication.EColor col2 = myApp.Myplane[myApp.before.i][myApp.before.j];
+    	   myApp.Myplane[myApp.before.i][myApp.before.j]=col1;
+    	   myApp.Myplane[myApp.redo.i][myApp.redo.j]=col2;
+ 	   
        }
        myApp.redo_is_active = false;
        UpdateGUI();
@@ -623,18 +642,27 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
            if (s.isEmpty()) return false;
            String[] mcolor = null;
            int num = 0;
+           int col;
            mcolor = s.split(";");
            Log.d("lines","File content: " + s);
            for (int i=0; i<9; i++) {
         	   for (int j=0; j<9; j++) {
-        		   myApp.Myplane[i][j]= (LinesApplication.EColor.values())[Integer.parseInt(mcolor[num++])];
+        		   col = Integer.parseInt(mcolor[num++]);
+        		   if (!myApp.Rainbow_support && col == 8) {
+        			   col=1;
+        		   }        			   
+        		   myApp.Myplane[i][j]= (LinesApplication.EColor.values())[col];
         	       //num++;	   
         	   }
            }
            Log.d("lines","Newballs: "+newBallsString);
            //myApp.balls_count = Integer.parseInt(newBallsString);
            for (int i=0; i<myApp.balls_count; i++ ) {
-              myApp.newballs[i] = (LinesApplication.EColor.values())[Integer.parseInt(mcolor[num++])];
+        	  col = Integer.parseInt(mcolor[num++]);
+        	  if (!myApp.Rainbow_support && col == 8) {
+   			     col=1;
+   		      }   
+        	  myApp.newballs[i] = (LinesApplication.EColor.values())[col];
               Log.d("lines","Newballs["+Integer.toString(i)+"]="+mcolor[num]);
               //num++;           		 
            }
@@ -869,7 +897,12 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     	  int randnum = rand.nextInt();
     	  if(randnum<0) randnum = -randnum;
     	  Log.d("lines", "randnum "+ Integer.toString(randnum));
-    	  myApp.newballs[i] = (LinesApplication.EColor.values())[(randnum%7)+1];
+    	  if (myApp.Rainbow_support && randnum%100 == 0) {
+    		  myApp.newballs[i] = EColor.RAINBOW;
+    	  }
+    	  else {
+    		  myApp.newballs[i] = (LinesApplication.EColor.values())[(randnum%7)+1];
+    	  }
          }  
     }
     
@@ -903,7 +936,8 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     					  myApp.lastballs_pos[k].i = i;
     					  myApp.lastballs_pos[k].j = j;
     					  found = true;
-    					  if (myApp.check_for_lines(i,j))
+    					  
+    					  if (myApp.check_for_lines(myApp.Myplane[i][j],i,j))
     						  myApp.redo_is_active = false;
     					  Log.d("lines", "i: " + Integer.toString(i)+ "j: " + Integer.toString(j));
      				  }
@@ -920,11 +954,24 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
        
        //ScoreView.setText(Integer.toString(Freeroom) + "  ");
     }
-    
-    
+  
+  protected EColor nextColor(EColor col){
+     int ret = col.int_EColor();
+     EColor retcol;
+	   if (col == EColor.RAINBOW ) { 
+          retcol = EColor.RED; 
+	   }
+	   else {
+		  retcol=(LinesApplication.EColor.values())[ret+1];; 
+	   }
+     return retcol;
+  }
+	  
   @Override
   public void run() {
     // TODO Auto-generated method stub
+    //myApp.ColorR= Colors[myApp.curr_Color.int_EColor()][0];	
+    //myApp.ColorR_weak = Colors[myApp.curr_Color.int_EColor()][1];
     while(locker){
       //checks if the lockCanvas() method will be success,and if not, will check this statement again
       if(!holder.getSurface().isValid()){
@@ -959,17 +1006,37 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
       //xtop = (canvas.getHeight()-40)/9;
       
       //ALL PAINT-JOB MAKE IN draw(canvas); method.
+      if (myApp.Rainbow_support) {
+    	  Log.d("nextColor", "Set color: " + " " + Integer.toString(myApp.curr_Color.int_EColor()));
+    	  long ttt=System.currentTimeMillis();
+    	  int inc=1;
+    	  if (ttt-myApp.Changetime > 1000) {
+    		  if (myApp.i == 10000) {
+    			 inc=-1;  
+    		  }
+    		  if (myApp.i == 0 ){
+    			  inc=1;
+    		  }
+    		  myApp.i=myApp.i+inc;
+    		  myApp.prev_Color=myApp.curr_Color;
+    		  myApp.curr_Color=nextColor(myApp.curr_Color);
+    		  myApp.cColor= (int) (myApp.i * myApp.increment);
+    	      myApp.Changetime=ttt;
+    	  }    	      
+          //Log.d("nextColor", "Set color: " + " " + Integer.toString(myApp.curr_Color.int_EColor()));
+      }
       draw(canvas);
       
       // End of painting to canvas. system will paint with this canvas,to the surface.
       holder.unlockCanvasAndPost(canvas);
       if(myApp.Movement_in_Progress && myApp.currstep == myApp.pathlength - 1 ) {
     	  Log.d("lines", "End of movement: " + Integer.toString(myApp.currstep));
+    	  EColor mycolor = myApp.Myplane[myApp.active.i][myApp.active.j];
     	  myApp.Movement_in_Progress = false;
           myApp.clear_visited();
           skip = 2;
           
-          if(!myApp.check_for_lines(myApp.active.i,myApp.active.j)) {
+          if(!myApp.check_for_lines(mycolor,myApp.active.i,myApp.active.j)) {
             balls_position(myApp.balls_count);
             newballs(myApp.balls_count);
             if(myApp.Freeroom == 0) {
@@ -988,14 +1055,15 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
 	      LinesApplication.EColor mcol2 = myApp.Myplane[myApp.to.i][myApp.to.j];
 	      myApp.Myplane[myApp.active.i][myApp.active.j] = mcol2;
 	      myApp.Myplane[myApp.to.i][myApp.to.j] = mcol;
-	      if(!myApp.check_for_lines(myApp.active.i,myApp.active.j) &&
-             !myApp.check_for_lines(myApp.to.i,myApp.to.j)) {
+	      boolean first = myApp.check_for_lines(myApp.Myplane[myApp.active.i][myApp.active.j],myApp.active.i, myApp.active.j);
+	      boolean second = myApp.check_for_lines(myApp.Myplane[myApp.to.i][myApp.to.j],myApp.to.i,myApp.to.j);
+	      if(!first && !second) {
 	           balls_position(myApp.balls_count);
 	           newballs(myApp.balls_count);
 	           if(myApp.Freeroom == 0) {
 	             EndGame();
 	           }
-               myApp.redo_is_active=false; 	           
+               //myApp.redo_is_active=false; 	           
 	      }
 	      else {
 	    	  myApp.redo_is_active = false;
@@ -1011,6 +1079,7 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
   }
   
   private void draw_ball(Canvas canvas, Paint paint, int color, int radius, int x, int y) {
+	   
 	   paint.setColor(color);
 	   canvas.drawCircle(x, y, radius, paint);	  
   }
@@ -1039,6 +1108,8 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     int width,height, minsize;
     int msize;
     int vert = 0;
+    int colorR_ = Colors[myApp.curr_Color.int_EColor()][0];
+    int colorR_weak = Colors[myApp.curr_Color.int_EColor()][1];
     
     if(jmp == maxjmp) {
     	speed=-1;
@@ -1115,9 +1186,22 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     	      }   
               RectF oval = new RectF(top,left,bottom,right);
     	      LinesApplication.EColor ecolor = myApp.Myplane[i][j];
-    	      int color_ = Colors[ecolor.int_EColor()][0];
-              int color_weak = Colors[ecolor.int_EColor()][1];
-              draw_arc(canvas,paint,color_,color_weak,oval);
+    	      if (ecolor == EColor.RAINBOW) {
+      	          int color_ = Colors[myApp.curr_Color.int_EColor()][0];
+    	    	  //int color_ = -myApp.cColor;
+                  int color_weak = Colors[myApp.curr_Color.int_EColor()][1];
+    	    	  //int color_weak = -myApp.cColor;
+    	    	  //myApp.ColorR++;
+    	    	  //myApp.ColorR_weak++;
+                  //draw_arc(canvas,paint,myApp.ColorR,myApp.ColorR_weak,oval);
+    	    	  draw_arc(canvas,paint,color_,color_weak,oval);
+    	    	  //Log.d("lines", "Set colors: " + " " + Integer.toString(color_)+" "+ Integer.toString(color_weak)     );
+    	      }
+    	      else {
+    	          int color_ = Colors[ecolor.int_EColor()][0];
+                  int color_weak = Colors[ecolor.int_EColor()][1];
+                  draw_arc(canvas,paint,color_,color_weak,oval);
+    	      }                  
           }
     
           //paint right circle(white)
@@ -1165,9 +1249,18 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
         	  }        		  
               
               LinesApplication.EColor ecolor = myApp.newballs[i];
-	          int color_ = Colors[ecolor.int_EColor()][0];
-              int color_weak = Colors[ecolor.int_EColor()][1];
-              draw_arc(canvas,paint,color_,color_weak,oval);  
+       	      if (ecolor == EColor.RAINBOW) {
+      	          int color_ = Colors[myApp.curr_Color.int_EColor()][0];
+                  int color_weak = Colors[myApp.curr_Color.int_EColor()][1];
+    	    	  draw_arc(canvas,paint,color_,color_weak,oval);
+
+    	      }
+    	      else {
+    	          int color_ = Colors[ecolor.int_EColor()][0];
+                  int color_weak = Colors[ecolor.int_EColor()][1];
+                  draw_arc(canvas,paint,color_,color_weak,oval);
+    	      }                  
+              
           }
     } 
     
@@ -1232,8 +1325,9 @@ public class LinesViewActivity extends Activity implements OnSharedPreferenceCha
     Log.d("lines", "LinesViewActivity resume");
     newBallsString = myApp.prefs.getString("newballs", "4");
 	myApp.balls_count = Integer.parseInt(newBallsString);
-	if (myApp.balls_count == 3 )
+	if (myApp.balls_count == 3 ) {
 		myApp.Replacement_support = false;
+	}
 	loadGame();
     super.onResume();
     resume();    
@@ -1253,8 +1347,9 @@ public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
 	Log.d("lines", "onSharedPreferenceChanges"+newBallsString);
 	newBallsString = myApp.prefs.getString("newballs", "4");
 	myApp.balls_count = Integer.parseInt(newBallsString);
-	if (myApp.balls_count == 3 )
+	if (myApp.balls_count == 3 ) {
 		myApp.Replacement_support = false;
+	}
 	loadGame();
 }
 } 

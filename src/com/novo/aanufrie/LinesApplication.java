@@ -27,8 +27,18 @@ public class LinesApplication extends Application implements
 	public boolean visited[][] = new boolean[9][9];
 	public boolean Movement_in_Progress=false;
 	public boolean Replacement_support=true;
+	public boolean Rainbow_support=true;
+	public long Changetime=System.currentTimeMillis();
+	EColor curr_Color=EColor.YELLOW;
+	EColor prev_Color=EColor.YELLOW;
+	int cColor;
+	int i=0;
+	double increment=0xFFFFFFd/100000d;
+	int ColorR = 0;
+	int ColorR_weak = 0;
 	public boolean Replacement_in_Progress=false;
 	public int pathlength=0;
+	int number_of_lines=0;
 	int balls_in_lines =0;
 	public int Freeroom = 0;
 	public int lastFreeroom = 0;
@@ -40,7 +50,7 @@ public class LinesApplication extends Application implements
 	public TextView ScoreView;
 	
 	 public enum EColor {
-		  NONE(0),RED(1),GREEN(2),BLUE(3),YELLOW(4),BLACK(5),VIOLET(6),ORANGE(7);
+		  NONE(0),RED(1),GREEN(2),BLUE(3),YELLOW(4),BLACK(5),VIOLET(6),ORANGE(7),RAINBOW(8);
 		  EColor(int value) {this.value=value;}
 		  private final int value;
 		  public int int_EColor() {
@@ -131,9 +141,10 @@ public class LinesApplication extends Application implements
 	 public int Estimate_Position(coordinate from, coordinate to) {
 	       int cost =0;
 	 
-	       LinesApplication.EColor color = MyplaneCopy[from.i][from.j];
-	       MyplaneCopy[from.i][from.j] = LinesApplication.EColor.NONE;
-	       MyplaneCopy[to.i][to.j]=color;
+	       LinesApplication.EColor color1 = MyplaneCopy[from.i][from.j];
+	       LinesApplication.EColor color2 = MyplaneCopy[to.i][to.j];
+	       MyplaneCopy[from.i][from.j] = color2;
+	       MyplaneCopy[to.i][to.j]=color1;
 	       cost += Estimate_Line(new coordinate(4,0),new coordinate(1,1));
 	       cost += Estimate_Line(new coordinate(3,0),new coordinate(1,1));
 	       cost += Estimate_Line(new coordinate(2,0),new coordinate(1,1));
@@ -160,8 +171,8 @@ public class LinesApplication extends Application implements
 	       for(int i=0; i < 9; i++) {
 	    	   cost += Estimate_Line(new coordinate(i,0),new coordinate(0,1));
 	       }
-	       MyplaneCopy[from.i][from.j] = color;
-	       MyplaneCopy[to.i][to.j]=LinesApplication.EColor.NONE;
+	       MyplaneCopy[from.i][from.j] = color1;
+	       MyplaneCopy[to.i][to.j]=color2;
 	       
 	       return cost;
 	    }
@@ -195,6 +206,7 @@ public class LinesApplication extends Application implements
 	    	 //Log.d("lines", "addpath:" + Integer.toString(currstep)+ ": " + Integer.toString(to.i)+ " " + Integer.toString(to.j));
 	    	 return true;
 	      }
+	      
 	      nbs[0]=new coordinate(0,0);
 	      nbs[1]=new coordinate(0,0);
 	      nbs[2]=new coordinate(0,0);
@@ -249,15 +261,19 @@ public class LinesApplication extends Application implements
 	      
 	    }
 	    
-	    private void check_direction(coordinate ball_pos, int di, int dj){
-	    	LinesApplication.EColor mycolor = Myplane[ball_pos.i][ball_pos.j];
-	        int i = ball_pos.i;
+	    private void check_direction(EColor mycolor,coordinate ball_pos, int di, int dj){
+	    	//LinesApplication.EColor mycolor = Myplane[ball_pos.i][ball_pos.j];
+	        //if (mycolor == EColor.RAINBOW) { 
+	        //}
+	        	
+	    	int i = ball_pos.i;
 	        int j = ball_pos.j;
 	    	
 	    	while(true) {
 	    	  i += di;
 	    	  j += dj;
-	    	  if(i>=0 && i<9 && j>=0 && j<9 && mycolor == Myplane[i][j]) {
+	    	  if(i>=0 && i<9 && j>=0 && j<9 && (mycolor == Myplane[i][j] 
+	    		 || Myplane[i][j] == EColor.RAINBOW ) ) {
 	    		  all_balls[balls_in_lines].i = i;
 	    		  all_balls[balls_in_lines].j = j;
 	    		  balls_in_lines++;
@@ -269,12 +285,96 @@ public class LinesApplication extends Application implements
 	    }
 	    
 	    
-	    public boolean check_for_lines(int x, int y) {
+	    private boolean check_for_lines_1(EColor mycolor, int x, int y) {
 	        coordinate ball_pos = new coordinate(x,y);
-	    	LinesApplication.EColor mycolor = Myplane[ball_pos.i][ball_pos.j];
+		    	//LinesApplication.EColor mycolor = Myplane[ball_pos.i][ball_pos.j];
+		    	int prev = balls_in_lines;
+		    	int save_balls=balls_in_lines;
+		        
+		        Log.d("lines", "check_for_lines:" + Integer.toString(Freeroom) + " " + Integer.toString(ball_pos.i) + " " + Integer.toString(ball_pos.j));
+		        //ScoreView.setText(Integer.toString(Score) + "  ");
+		        if(mycolor == LinesApplication.EColor.NONE) {
+		        	Log.d("lines", "Ups");
+		        	return false;
+		        }
+		        
+		        //balls_in_lines=0;
+		 		all_balls[balls_in_lines].i = ball_pos.i;
+				all_balls[balls_in_lines].j = ball_pos.j;
+				balls_in_lines++;
+		        check_direction(mycolor,ball_pos,1,0);
+		        check_direction(mycolor,ball_pos,-1,0);
+		        if(balls_in_lines - prev < 5) { 
+		        	balls_in_lines = prev;
+		        }
+		        else {
+		        	if (balls_in_lines - prev == 9) {
+		        		number_of_lines++;
+		        	}
+		        	number_of_lines++;
+		        	Log.d("lines", "1" + " " + Integer.toString(balls_in_lines));      	
+		        }
+		        prev = balls_in_lines;
+		        balls_in_lines++;
+		        check_direction(mycolor,ball_pos,1,1);
+		        check_direction(mycolor,ball_pos,-1,-1);
+		        if(balls_in_lines - prev < 5) { 
+		        	balls_in_lines = prev;
+		        }
+		        else {
+		        	if (balls_in_lines - prev == 9) {
+		        		number_of_lines++;
+		        	}
+		        	Log.d("lines", "2"+ " " + Integer.toString(balls_in_lines));  
+		        	number_of_lines++;
+		        }
+		        prev = balls_in_lines;
+		        balls_in_lines++; 
+		        check_direction(mycolor,ball_pos,0,1);
+		        check_direction(mycolor,ball_pos,0,-1);
+		        if(balls_in_lines - prev < 5) { 
+		        	balls_in_lines = prev;
+		        }
+		        else {
+		        	if (balls_in_lines - prev == 9) {
+		        		number_of_lines++;
+		        	}
+		        	Log.d("lines", "3"+ " " + Integer.toString(balls_in_lines));  
+		        	number_of_lines++;
+		        }
+		        prev = balls_in_lines;
+		        balls_in_lines++;
+		        check_direction(mycolor,ball_pos,1,-1);
+		        check_direction(mycolor,ball_pos,-1,1);
+		        if(balls_in_lines - prev < 5) {
+		        	balls_in_lines = prev;
+		        }
+		        else {
+		        	if (balls_in_lines - prev == 9) {
+		        		number_of_lines++;
+		        	}
+		        	Log.d("lines", "4"+ " " + Integer.toString(balls_in_lines));
+		        	number_of_lines++;
+		        }
+                if(balls_in_lines-save_balls >= 5){ 
+                	return true;
+                }
+                else {
+                	balls_in_lines=save_balls;
+		            return false;
+                }
+	    }
+	    
+	    public boolean check_for_lines(EColor mycolor, int x, int y) {
+	        coordinate ball_pos = new coordinate(x,y);
+	    	//LinesApplication.EColor mycolor = Myplane[ball_pos.i][ball_pos.j];
 	    	int prev = 1;
-	        int number_of_lines = 0;
+	    	int save_balls=0;
+	    	int save_num=0;
+	        boolean ret = false;
 	        
+	        number_of_lines=0;
+	        balls_in_lines=0;
 	        
 	        Log.d("lines", "check_for_lines:" + Integer.toString(Freeroom) + " " + Integer.toString(ball_pos.i) + " " + Integer.toString(ball_pos.j));
 	        //ScoreView.setText(Integer.toString(Score) + "  ");
@@ -282,66 +382,40 @@ public class LinesApplication extends Application implements
 	        	Log.d("lines", "Ups");
 	        	return false;
 	        }
-	        
-	        balls_in_lines=0;
-	 		all_balls[0].i = ball_pos.i;
-			all_balls[0].j = ball_pos.j;
-			balls_in_lines++;
-	        check_direction(ball_pos,1,0);
-	        check_direction(ball_pos,-1,0);
-	        if(balls_in_lines - prev < 4) { 
-	        	balls_in_lines = prev;
+	        if (mycolor == EColor.RAINBOW) {
+	            for (EColor color: EColor.values()) {
+	            	boolean mret;
+	            	save_balls=balls_in_lines;
+	            	save_num=number_of_lines;
+	            	if (color != EColor.NONE && color != EColor.RAINBOW) {
+	            		mret=check_for_lines_1(color,x,y);
+	            		if (mret) {
+	            			ret = true;
+	            			number_of_lines=save_num+number_of_lines;
+	            			balls_in_lines=save_balls+balls_in_lines;
+	            		}
+	            		else {
+	            			balls_in_lines=save_balls;
+	            			number_of_lines=save_num;
+	            		}
+	            	}
+	            }
 	        }
 	        else {
-	        	number_of_lines++;
-	        	Log.d("lines", "1" + " " + Integer.toString(balls_in_lines));      	
-	        }
-	        prev = balls_in_lines;
-	        check_direction(ball_pos,1,1);
-	        check_direction(ball_pos,-1,-1);
-	        if(balls_in_lines - prev < 4) { 
-	        	balls_in_lines = prev;
-	        }
-	        else {
-	        	Log.d("lines", "2"+ " " + Integer.toString(balls_in_lines));  
-	        	number_of_lines++;
-	        }
-	        prev = balls_in_lines;
-	        check_direction(ball_pos,0,1);
-	        check_direction(ball_pos,0,-1);
-	        if(balls_in_lines - prev < 4) { 
-	        	balls_in_lines = prev;
-	        }
-	        else {
-	        	Log.d("lines", "3"+ " " + Integer.toString(balls_in_lines));  
-	        	number_of_lines++;
-	        }
-	        prev = balls_in_lines;
-	        check_direction(ball_pos,1,-1);
-	        check_direction(ball_pos,-1,1);
-	        if(balls_in_lines - prev < 4) {
-	        	balls_in_lines = prev;
-	        }
-	        else {
-	        	Log.d("lines", "4"+ " " + Integer.toString(balls_in_lines));
-	        	number_of_lines++;
-	        }
-	        
+	            ret = check_for_lines_1(mycolor,x,y);
+	        } 	            
 	        if(balls_in_lines >= 5) {
 	            for(int i=0; i < balls_in_lines; i++) {
 	            	Log.d("lines", "all balls:"+ " " + Integer.toString(all_balls[i].i) + " " + Integer.toString(all_balls[i].j));
 	            	Myplane[all_balls[i].i][all_balls[i].j] = LinesApplication.EColor.NONE;
 	            	Freeroom++;
 	            }
-	            Score = Score + 2*(number_of_lines * balls_in_lines);
-	            Log.d("lines", "Score: " + Integer.toString(Score));
-	            //ScoreView.setText(Integer.toString(Score) + "  ");
-	            //ScoreView.setText("110  ");
-	        	return true;
 	        }
-	        Log.d("lines", "Score: " + Integer.toString(Score));
-	        //ScoreView.setText(Integer.toString(Score) + "  ");
-	        return false; 
+	        
+	        Log.d("lines", "Score: " + Integer.toString(number_of_lines)+" "+Integer.toString(balls_in_lines));
+	        Score=Score+2*(number_of_lines*balls_in_lines);
+            Log.d("lines", "Score: " + Integer.toString(Score));
+            return ret;
 	    }
 	 
 	 
@@ -377,22 +451,38 @@ public class LinesApplication extends Application implements
 	    		   if (Myplane[i][j] != LinesApplication.EColor.NONE) {
 	    			   for (int k=0; k<9; k++) {
 	    				   for (int m=0; m<9; m++) {
-	    					   if(Myplane[k][m] == LinesApplication.EColor.NONE) {
-	    						   clear_visited();
-	    						   currstep=0;
-	    						   if (find_path(new LinesApplication.coordinate(i,j),new LinesApplication.coordinate(k,m))) {
-	    							   cost = Estimate_Position(new LinesApplication.coordinate(i,j),new LinesApplication.coordinate(k,m));
-	    							   if (cost > 0)
-	    							       //Log.d("lines", "Find_Best_Movement " + Integer.toString(i)+":"+Integer.toString(j)+"->"+Integer.toString(k)+":"+Integer.toString(m)+" " + Integer.toString(cost));
-	    							   if (cost > best_cost) {
-	    								   best_cost = cost;
-	    								   best_from.i = i;
-	    								   best_from.j = j;
-	    								   best_to.i = k;
-	    								   best_to.j = m;
-	    							   }
-	    						   }
+	    					  if(Replacement_support &&
+	    						 ((i - k == 1 || k - i == 1) && j - m == 0) ||
+	    					     ((j - m == 1 || m - j == 1) && i - k == 0)) { 
+    							   cost = Estimate_Position(new LinesApplication.coordinate(i,j),new LinesApplication.coordinate(k,m));
+    							   if (cost > 0)
+    							       //Log.d("lines", "Find_Best_Movement " + Integer.toString(i)+":"+Integer.toString(j)+"->"+Integer.toString(k)+":"+Integer.toString(m)+" " + Integer.toString(cost));
+    							   if (cost > best_cost) {
+    								   best_cost = cost;
+    								   best_from.i = i;
+    								   best_from.j = j;
+    								   best_to.i = k;
+    								   best_to.j = m;
+    							   } 
 	    					   }
+	    					   else { 
+	    					      if(Myplane[k][m] == LinesApplication.EColor.NONE) {
+	    						      clear_visited();
+	    						      currstep=0;
+	    						      if (find_path(new LinesApplication.coordinate(i,j),new LinesApplication.coordinate(k,m))) {
+	    							      cost = Estimate_Position(new LinesApplication.coordinate(i,j),new LinesApplication.coordinate(k,m));
+	    							      if (cost > 0)
+	    							          //Log.d("lines", "Find_Best_Movement " + Integer.toString(i)+":"+Integer.toString(j)+"->"+Integer.toString(k)+":"+Integer.toString(m)+" " + Integer.toString(cost));
+	    							      if (cost > best_cost) {
+	    								      best_cost = cost;
+	    								      best_from.i = i;
+	    								      best_from.j = j;
+	    								      best_to.i = k;
+	    								      best_to.j = m;
+	    							      }
+	    						      }
+	    					      }
+	    					   }    
 	    				   }
 	    			   }
 	    		   }
@@ -429,14 +519,22 @@ public class LinesApplication extends Application implements
 	      pathlength = 1;
 	      currstep = 0;
 	      //ScoreView.setText(Integer.toString(Score++)+ "  "); 
-	      if(find_path(from,to)) {
-	    	 Movement_in_Progress = true;
-	    	 Log.d("lines", "moveBall pathlength:" + Integer.toString(pathlength));
-	    	 currstep=0;
-	       	 for(int i=0; i<pathlength;i++) {
-	    		 Log.d("lines", "Path:" + Integer.toString(i) + " " + Integer.toString(Path[i].i) + " " + Integer.toString(Path[i].j)); 
-	    	 }
+	      if(Replacement_support &&
+					 ((from.i - to.i == 1 || to.i - from.i == 1) && from.j - to.j == 0) ||
+				     ((from.j - to.j == 1 || to.j - from.j == 1) && from.i - to.i == 0)) {
+	    	  Replacement_in_Progress = true;
+	    	  currstep=0;
 	      }
+	      else {
+	    	if(find_path(from,to)) {
+	           Movement_in_Progress = true;
+	    	   Log.d("lines", "moveBall pathlength:" + Integer.toString(pathlength));
+	    	   currstep=0;
+	       	   for(int i=0; i<pathlength;i++) {
+	    		   Log.d("lines", "Path:" + Integer.toString(i) + " " + Integer.toString(Path[i].i) + " " + Integer.toString(Path[i].j)); 
+	    	   }
+	        }
+	      } 	    	
 	      myHandler.post(myRunnable);
       }
 	  
