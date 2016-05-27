@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">Lines</string>
+    <string name="app_name">LinesAn</string>
     <string name="action_settings">Settings</string>
     <string name="program_info">Program Info</string>
     <string name="hello_world">Hello world!</string>
@@ -11,5 +11,6 @@
     <string name="titleNewBalls">NewBalls</string>
     <string name="NewBallsSummary">how many balls are appeared</string>
     <string name="title_activity_program_info">ProgramInfoActivity</string>
+    <string name="title_activity_good_game">Good_game</string>
 
 </resources>

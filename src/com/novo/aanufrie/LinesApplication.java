@@ -4,6 +4,7 @@ package com.novo.aanufrie;
 import android.app.Application;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
+import android.media.MediaPlayer;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -28,7 +29,9 @@ public class LinesApplication extends Application implements
 	public boolean Movement_in_Progress=false;
 	public boolean Replacement_support=true;
 	public boolean Rainbow_support=true;
+	public boolean Ready = false;
 	public long Changetime=System.currentTimeMillis();
+	public MediaPlayer champPl;
 	EColor curr_Color=EColor.YELLOW;
 	EColor prev_Color=EColor.YELLOW;
 	int cColor;
@@ -48,6 +51,9 @@ public class LinesApplication extends Application implements
 	public boolean robot_is_active = false;
 	public Handler myHandler;
 	public TextView ScoreView;
+	public boolean Final = false;
+	public long FinalPeriod;
+	public int WT[][] = new int[6][6];
 	
 	 public enum EColor {
 		  NONE(0),RED(1),GREEN(2),BLUE(3),YELLOW(4),BLACK(5),VIOLET(6),ORANGE(7),RAINBOW(8);
@@ -70,6 +76,81 @@ public class LinesApplication extends Application implements
 	         }
 	      };
 	 
+     private int Weight(int kol_of_color,int kol_of_none) { 	      
+        int weight = 0;
+	       /*if (kol_of_color == 5 ) {
+	    	   weight = 1000;
+	       } else if (kol_of_color == 4 && kol_of_none == 1) {
+	    	   weight = 300;
+	       } else if (kol_of_color == 4) {
+	    	   weight = 100;
+	       } else if (kol_of_color == 3 && kol_of_none == 2) {
+	           weight = 30 ; 
+	       } else if (kol_of_color == 3 && kol_of_none == 1) {
+	    	   weight = 20;
+	       } else if (kol_of_color == 3) {
+	    	   weight = 10;
+	       } else if (kol_of_color == 2 && kol_of_none == 3) {
+	    	   weight = 8;
+	       } else if (kol_of_color == 2 && kol_of_none == 2) {
+	    	   weight = 3;
+	       }*/
+           weight = WT[kol_of_color][kol_of_none]; 
+	       return weight;
+     }
+ 
+      boolean bad_color(EColor color, int i, int j) {
+         if (i >=0 && i < 9 && j >=0 && j < 9) {
+        	 EColor mcolor = MyplaneCopy[i][j];
+        	 if (mcolor != EColor.RAINBOW && mcolor != EColor.NONE && mcolor != color) {
+        		 return false;
+        	 }
+         }
+         return true;
+      }
+      
+      boolean same_color(EColor color, int i, int j) {
+          if (i >=0 && i < 9 && j >=0 && j < 9) {
+         	 EColor mcolor = MyplaneCopy[i][j];
+         	 if (mcolor == EColor.RAINBOW || mcolor == color) {
+         		 return true;
+         	 }
+          }
+          return false;
+       }
+    	  
+      boolean is_good_space(EColor color, int curri, int currj, coordinate from, coordinate direction) {
+         EColor ncolor = LinesApplication.EColor.NONE;
+    	 // if there are balls which can be move to square by replacement than
+         // this is good situation
+         if(Replacement_support && direction.i != 0 && direction.j != 0 ) {
+             if (same_color(color,curri+1,currj) || same_color(color,curri-1,currj) ||
+            	 same_color(color,curri,currj+1) || same_color(color,curri,currj-1))
+            	 return true;
+         } 
+         if (MyplaneCopy[curri][currj] == LinesApplication.EColor.NONE ){ 
+             // if all squares around contains different colors this is bad situation
+             if (direction.i != 0 && direction.j != 0 &&
+                 bad_color(color, curri+1, currj) && bad_color(color, curri-1,currj) &&
+            	 bad_color(color, curri, currj+1) && bad_color(color,curri,currj-1)) {
+        		 return false;
+        	 }
+             else if (direction.i == 0 && 
+            	 bad_color(color,curri-1,currj) && bad_color(color,curri+1,currj)) {
+            	 return false;
+             }
+             else if (direction.j == 0 && 
+                	 bad_color(color,curri,currj-1) && bad_color(color,curri,currj+1)) {
+                	 return false;
+                 }
+        	 else {
+    		     return true;
+        	 }
+    	 }
+         else
+        	return false;
+     }
+     
 	 public int Estimate_Line(coordinate from, coordinate direction){
 	    	int cost = 0;
 	    	int i=0;
@@ -84,7 +165,8 @@ public class LinesApplication extends Application implements
 	    	    	   	
 	    	for(LinesApplication.EColor color:LinesApplication.EColor.values()) {
 	    	
-	    		if (color == LinesApplication.EColor.NONE )
+	    		if (color == LinesApplication.EColor.NONE  || 
+	    			color == LinesApplication.EColor.RAINBOW	)
 	    			continue;
 	    		//Log.d("lines", "Estimate_Line: " + Integer.toString(color.int_EColor()));
 	    		//do {
@@ -98,37 +180,25 @@ public class LinesApplication extends Application implements
 	    	       nextj = j;
 	    	       endi = i+5*direction.i;
 	        	   endj = j+5*direction.j;
-	    	       if(endi >=9 || endj >=9 || endi < 0 || endj < 0 ) {
+	    	       if(endi >9 || endj >9 || endi < 0 || endj < 0 ) {
 	    	    	   break;
 	    	       } 
 	    	       else {
-	    	           while((nexti == i || nexti != endi) &&
-	    	                 (nextj == j || nextj != endj)) {
-	    	                if(MyplaneCopy[nexti][nextj] == color)
+	    	           while((nexti != endi) && ( nextj != endj)) {
+	    	                if(MyplaneCopy[nexti][nextj] == color || 
+	    	                   MyplaneCopy[nexti][nextj] == LinesApplication.EColor.RAINBOW) {
 	    	                  kol_of_color++;
-	    	                if(MyplaneCopy[nexti][nextj] == LinesApplication.EColor.NONE) 
-	    	                  kol_of_none++;
+	    	                }  
+	    	                else if (is_good_space(color, nexti, nextj, from, direction)) { 
+	    	                //if(MyplaneCopy[nexti][nextj] == LinesApplication.EColor.NONE) { 
+	    	                   //if (there_is_candidate(color, from, nexti, nextj , direction) )
+	    	                	  kol_of_none++;
+	    	                }
 	    	                nexti=nexti+direction.i;
 	    	                nextj=nextj+direction.j;
 	    	           }
 	    	       }
-	    	       if (kol_of_color == 5 ) {
-	    	    	   cost = cost+1000;
-	    	       } else if (kol_of_color == 4 && kol_of_none == 1) {
-	    	    	   cost = cost+300;
-	    	       } else if (kol_of_color == 4) {
-	    	    	   cost = cost+100;
-	    	       } else if (kol_of_color == 3 && kol_of_none == 2) {
-	    	           cost = cost+30; 
-	    	       } else if (kol_of_color == 3 && kol_of_none == 1) {
-	    	    	   cost = cost+20;
-	    	       } else if (kol_of_color == 3) {
-	    	    	   cost = cost+10;
-	    	       } else if (kol_of_color == 2 && kol_of_none == 3) {
-	    	    	   cost = cost+8;
-	    	       } else if (kol_of_color == 2 && kol_of_none == 2) {
-	    	    	   cost = cost+3;
-	    	       }
+	    	       cost = cost + Weight(kol_of_color, kol_of_none); 
 	    	       i+= direction.i;
 	    	       j+= direction.j;
 	    	    } while(true);
@@ -291,7 +361,7 @@ public class LinesApplication extends Application implements
 		    	int prev = balls_in_lines;
 		    	int save_balls=balls_in_lines;
 		        
-		        Log.d("lines", "check_for_lines:" + Integer.toString(Freeroom) + " " + Integer.toString(ball_pos.i) + " " + Integer.toString(ball_pos.j));
+		        //Log.d("lines", "check_for_lines:" + Integer.toString(Freeroom) + " " + Integer.toString(ball_pos.i) + " " + Integer.toString(ball_pos.j));
 		        //ScoreView.setText(Integer.toString(Score) + "  ");
 		        if(mycolor == LinesApplication.EColor.NONE) {
 		        	Log.d("lines", "Ups");
@@ -312,7 +382,7 @@ public class LinesApplication extends Application implements
 		        		number_of_lines++;
 		        	}
 		        	number_of_lines++;
-		        	Log.d("lines", "1" + " " + Integer.toString(balls_in_lines));      	
+		        	//Log.d("lines", "1" + " " + Integer.toString(balls_in_lines));      	
 		        }
 		        prev = balls_in_lines;
 		        balls_in_lines++;
@@ -325,7 +395,7 @@ public class LinesApplication extends Application implements
 		        	if (balls_in_lines - prev == 9) {
 		        		number_of_lines++;
 		        	}
-		        	Log.d("lines", "2"+ " " + Integer.toString(balls_in_lines));  
+		        	//Log.d("lines", "2"+ " " + Integer.toString(balls_in_lines));  
 		        	number_of_lines++;
 		        }
 		        prev = balls_in_lines;
@@ -339,7 +409,7 @@ public class LinesApplication extends Application implements
 		        	if (balls_in_lines - prev == 9) {
 		        		number_of_lines++;
 		        	}
-		        	Log.d("lines", "3"+ " " + Integer.toString(balls_in_lines));  
+		        	//Log.d("lines", "3"+ " " + Integer.toString(balls_in_lines));  
 		        	number_of_lines++;
 		        }
 		        prev = balls_in_lines;
@@ -353,7 +423,7 @@ public class LinesApplication extends Application implements
 		        	if (balls_in_lines - prev == 9) {
 		        		number_of_lines++;
 		        	}
-		        	Log.d("lines", "4"+ " " + Integer.toString(balls_in_lines));
+		        	//Log.d("lines", "4"+ " " + Integer.toString(balls_in_lines));
 		        	number_of_lines++;
 		        }
                 if(balls_in_lines-save_balls >= 5){ 
@@ -376,7 +446,7 @@ public class LinesApplication extends Application implements
 	        number_of_lines=0;
 	        balls_in_lines=0;
 	        
-	        Log.d("lines", "check_for_lines:" + Integer.toString(Freeroom) + " " + Integer.toString(ball_pos.i) + " " + Integer.toString(ball_pos.j));
+	        //Log.d("lines", "check_for_lines:" + Integer.toString(Freeroom) + " " + Integer.toString(ball_pos.i) + " " + Integer.toString(ball_pos.j));
 	        //ScoreView.setText(Integer.toString(Score) + "  ");
 	        if(mycolor == LinesApplication.EColor.NONE) {
 	        	Log.d("lines", "Ups");
@@ -406,15 +476,15 @@ public class LinesApplication extends Application implements
 	        } 	            
 	        if(balls_in_lines >= 5) {
 	            for(int i=0; i < balls_in_lines; i++) {
-	            	Log.d("lines", "all balls:"+ " " + Integer.toString(all_balls[i].i) + " " + Integer.toString(all_balls[i].j));
+	            	//Log.d("lines", "all balls:"+ " " + Integer.toString(all_balls[i].i) + " " + Integer.toString(all_balls[i].j));
 	            	Myplane[all_balls[i].i][all_balls[i].j] = LinesApplication.EColor.NONE;
 	            	Freeroom++;
 	            }
 	        }
 	        
-	        Log.d("lines", "Score: " + Integer.toString(number_of_lines)+" "+Integer.toString(balls_in_lines));
+	        //Log.d("lines", "Score: " + Integer.toString(number_of_lines)+" "+Integer.toString(balls_in_lines));
 	        Score=Score+2*(number_of_lines*balls_in_lines);
-            Log.d("lines", "Score: " + Integer.toString(Score));
+            //Log.d("lines", "Score: " + Integer.toString(Score));
             return ret;
 	    }
 	 
@@ -452,8 +522,8 @@ public class LinesApplication extends Application implements
 	    			   for (int k=0; k<9; k++) {
 	    				   for (int m=0; m<9; m++) {
 	    					  if(Replacement_support &&
-	    						 ((i - k == 1 || k - i == 1) && j - m == 0) ||
-	    					     ((j - m == 1 || m - j == 1) && i - k == 0)) { 
+	    						 ((i - k == 1 || k - i == 1) && j == m) ||
+	    					     ((j - m == 1 || m - j == 1) && i == k)) { 
     							   cost = Estimate_Position(new LinesApplication.coordinate(i,j),new LinesApplication.coordinate(k,m));
     							   if (cost > 0)
     							       //Log.d("lines", "Find_Best_Movement " + Integer.toString(i)+":"+Integer.toString(j)+"->"+Integer.toString(k)+":"+Integer.toString(m)+" " + Integer.toString(cost));
@@ -514,7 +584,7 @@ public class LinesApplication extends Application implements
 	  
 	  public void moveBall(LinesApplication.coordinate from, LinesApplication.coordinate to) {
 	      LinesApplication.EColor mcol = Myplane[from.i][from.j];
-	      Log.d("lines", "moveBall Freeroom:" + Integer.toString(Freeroom)+ " " + Integer.toString(mcol.int_EColor()));
+	      //Log.d("lines", "moveBall Freeroom:" + Integer.toString(Freeroom)+ " " + Integer.toString(mcol.int_EColor()));
 	      clear_visited();
 	      pathlength = 1;
 	      currstep = 0;
@@ -524,15 +594,21 @@ public class LinesApplication extends Application implements
 				     ((from.j - to.j == 1 || to.j - from.j == 1) && from.i - to.i == 0)) {
 	    	  Replacement_in_Progress = true;
 	    	  currstep=0;
+	    	  int mycost = 0;
+	    	  mycost = Estimate_Position(from,to);
+	    	  Log.d("lines", "Score of movement : " + Integer.toString(mycost));
 	      }
 	      else {
 	    	if(find_path(from,to)) {
+	    	   int mycost = 0;
+	    	   mycost = Estimate_Position(from,to);
+	    	   Log.d("lines", "Score of movement : " + Integer.toString(mycost));
 	           Movement_in_Progress = true;
-	    	   Log.d("lines", "moveBall pathlength:" + Integer.toString(pathlength));
+	    	   //Log.d("lines", "moveBall pathlength:" + Integer.toString(pathlength));
 	    	   currstep=0;
-	       	   for(int i=0; i<pathlength;i++) {
-	    		   Log.d("lines", "Path:" + Integer.toString(i) + " " + Integer.toString(Path[i].i) + " " + Integer.toString(Path[i].j)); 
-	    	   }
+	       	   //for(int i=0; i<pathlength;i++) {
+	    		   //Log.d("lines", "Path:" + Integer.toString(i) + " " + Integer.toString(Path[i].i) + " " + Integer.toString(Path[i].j)); 
+	    	   //}
 	        }
 	      } 	    	
 	      myHandler.post(myRunnable);
@@ -569,13 +645,46 @@ public class LinesApplication extends Application implements
         for(int i=0; i<36; i++) {
       	all_balls[i] = new coordinate(0,0);
         }
+        champPl = MediaPlayer.create(getBaseContext(), R.raw.champ);
         
+        for (int i=0; i < 6; i++) {
+        	for (int j=0; j < 6; j++ ) {
+        		WT[i][j] = 0;
+        	}
+        }
+
+        // First table :) 
+        WT[5][0]=2000; 
+        WT[4][1]=300; WT[4][0]=100;
+        WT[3][2]=30; WT[3][1] = 20; WT[3][0]=10;  
+        WT[2][3]=8; WT[2][2]=3;
+        
+        	       /*if (kol_of_color == 5 ) {
+ 	    	   weight = 1000;
+ 	       } else if (kol_of_color == 4 && kol_of_none == 1) {
+ 	    	   weight = 300;
+ 	       } else if (kol_of_color == 4) {
+ 	    	   weight = 100;
+ 	       } else if (kol_of_color == 3 && kol_of_none == 2) {
+ 	           weight = 30 ; 
+ 	       } else if (kol_of_color == 3 && kol_of_none == 1) {
+ 	    	   weight = 20;
+ 	       } else if (kol_of_color == 3) {
+ 	    	   weight = 10;
+ 	       } else if (kol_of_color == 2 && kol_of_none == 3) {
+ 	    	   weight = 8;
+ 	       } else if (kol_of_color == 2 && kol_of_none == 2) {
+ 	    	   weight = 3;
+ 	       }*/
+        		
+        		
 	}
 
 	@Override
 	public void onTerminate() {
 		// TODO Auto-generated method stub
 		super.onTerminate();
+		champPl.release();
 		Log.d("lines", "LinesApplication onTerminate");
 	}
 

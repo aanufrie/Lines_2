@@ -18,14 +18,14 @@ public class RobotService extends Service{
 		this.myApp=(LinesApplication)getApplication();
 		this.updater = new Updater();
 		runFlag=true;
-		Log.d("lines","onCreate");
+		Log.d("robot","onCreate");
 	}
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		// TODO Auto-generated method stub
 		super.onStartCommand(intent, flags, startId);
-		Log.d("lines","RobotService start");
+		Log.d("robot","RobotService start");
 		this.updater.start();
 		return START_STICKY;
 	}
@@ -37,7 +37,7 @@ public class RobotService extends Service{
 		this.updater.interrupt();
 		this.runFlag=false;
 		this.updater = null;
-		Log.d("lines","RobotService destroy");
+		Log.d("robot","RobotService destroy");
 	}
 
 	@Override
@@ -54,12 +54,12 @@ public class RobotService extends Service{
 	   public void run() {
 		   RobotService robotService = RobotService.this;
 		   while (runFlag){
-			  Log.d("lines","RobotService running"); 
+			  Log.d("robot","RobotService running"); 
 			  
 			  try {
-	        	  if (!myApp.Movement_in_Progress){ 
+	        	  if (!myApp.Movement_in_Progress && myApp.Ready){ 
 				     myApp.Find_Best_Movement(); 
-	   	 	         Log.d("lines", "Find_Best_Movement "+Integer.toString(myApp.best_from.i)+" "+
+	   	 	         Log.d("robot", "Find_Best_Movement "+Integer.toString(myApp.best_from.i)+" "+
 	  	               Integer.toString(myApp.best_from.j)+" "+Integer.toString(myApp.best_to.i)+" "+Integer.toString(myApp.best_to.j) ); 
 	  	 	         // These values are used by run(). Should be defined. 
 	  	 	         myApp.active = myApp.best_from;
@@ -67,6 +67,8 @@ public class RobotService extends Service{
 	  	 	         myApp.to = myApp.best_to;
 	  	 	         myApp.saveStatus();
 	  	 	         myApp.moveBall(myApp.best_from,myApp.best_to);
+	        	  } else {
+	        		  Log.d("robot","MyApp isn't ready"); 
 	        	  }
 			     Thread.sleep(1000);
 			  } catch (InterruptedException e) {

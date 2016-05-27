@@ -14,15 +14,29 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 public class EditRecActivity extends Activity {
-    String Score;
+    public LinesApplication myApp;
+	String Score;
     private TextView ScoreView;
     private Button SaveBtn;
     private Button CancelBtn;
     private EditText UserName;
+    //private MediaPlayer mediaPlayer;
+    //private boolean started = false;
+    
+    protected void onStart() {
+    	super.onStart();
+    	myApp.champPl.start();
+    }
+    
+    protected void onDestroy() {
+    	super.onDestroy();
+    	myApp.champPl.stop();
+    }
     
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		myApp = (LinesApplication)getApplication();
 		Bundle extras = getIntent().getExtras();
 		if (extras != null) {
 		    Score = extras.getString("Score");
@@ -36,8 +50,11 @@ public class EditRecActivity extends Activity {
     	UserName = (EditText) findViewById(R.id.editName);
     	
     	ScoreView.setText("Your score is " + Score);
-    	MediaPlayer mediaPlayer = MediaPlayer.create(getBaseContext(), R.raw.champ);
-    	mediaPlayer.start();
+    	/*if (!started) {
+     	   mediaPlayer = MediaPlayer.create(getBaseContext(), R.raw.champ);
+     	   //mediaPlayer.start();
+     	   started = true;
+    	} */ 
         SaveBtn.setOnClickListener(new OnClickListener() {
         	
             @Override
